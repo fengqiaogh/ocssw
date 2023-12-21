@@ -1,0 +1,3 @@
+# local-path remote-path git-rev sha1-hash
+2020_308_009_IFF.odps testdata/l1agen_oci/2020_308_009_IFF.odps c5fa96d47ab5a066eb49f8ecaeb2132a725f550e 1de4741b6e51d199908b0d4a313b0ef11d52169d
+PACE_OCI_2020308009.20201103T145425.L1A.nc testdata/l1agen_oci/PACE_OCI_2020308009.20201103T145425.L1A.nc 20b778a8acf6a6ef9f30768df21d6838420cb571 ab8f56db7b213ebbfbf4ccbf11e61639aa2f81fb

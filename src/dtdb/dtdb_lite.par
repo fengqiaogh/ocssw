@@ -1,0 +1,24 @@
+    prod_xml = $OCDATAROOT/common/product.xml
+    dtdb_xml = $OCDATAROOT/aerosol/dtdb_product.xml
+    lut_nc4_dt = $OCDATAROOT/aerosol/darktarget/VIIRS_DARKTARGET_LUT_version_source.nc 
+    lut_nc4_db = $OCDATAROOT/aerosol/deepblue/VIIRS_DEEPBLUE_LUT_version_source.nc
+    landmask = $OCDATAROOT/common/landmask_GMT15ARC.nc
+    
+sunzen = 80
+satzen = 90
+glint_thresh = 0.005
+
+quality=on
+aerosol_type=on
+scattang=on
+fmf_550=on
+angstrom=on
+aot_380=on
+aot_410=on
+aot_490=on
+aot_550=on
+aot_670=on
+aot_865=on
+aot_1240=on
+aot_1610=on
+aot_2250=on

@@ -1,0 +1,56 @@
+python module pytmatrixf ! in 
+    interface  ! in :pytmatrix
+        subroutine calctmat(axi,rat,lam,mrr,mri,eps,np,ddelt,ndgs,nmax) ! in :pytmatrix:ampld.lp.f
+            real*8 intent(in) :: axi
+            real*8 intent(in) :: rat
+            real*8 intent(in) :: lam
+            real*8 intent(in) :: mrr
+            real*8 intent(in) :: mri
+            real*8 intent(in) :: eps
+            integer intent(in) :: np
+            real*8 intent(in) :: ddelt
+            integer intent(in) :: ndgs
+            integer intent(out) :: nmax
+        end subroutine calctmat
+        subroutine calcampl(nmax,lam,thet0,thet,phi0,phi,alpha,beta,s,z) ! in :pytmatrix:ampld.lp.f
+            integer intent(in) :: nmax
+            real*8 intent(in) :: lam
+            real*8 intent(in) :: thet0
+            real*8 intent(in) :: thet
+            real*8 intent(in) :: phi0
+            real*8 intent(in) :: phi
+            real*8 intent(in) :: alpha
+            real*8 intent(in) :: beta
+            complex*16 dimension(2,2),intent(out) :: s
+            real*8 dimension(4,4),intent(out) :: z
+        end subroutine calcampl
+        subroutine calcrand(rat,lam,mrr,mri,eps,np,ddelt,ndgs,npnax,axmax,b,gam,ndistr,nkmax,npna,ncoeff,reff,veff,cext,csca,albedo,asym,alpha,beta,f) ! in :pytmatrix:tmd.lp.f
+            real*8 intent(in) :: rat
+            real*8 intent(in) :: lam
+            real*8 intent(in) :: mrr
+            real*8 intent(in) :: mri
+            real*8 intent(in) :: eps
+            integer intent(in) :: np
+            real*8 intent(in) :: ddelt
+            integer intent(in) :: ndgs
+            integer intent(in) :: npnax
+            real*8 intent(in) :: axmax
+            real*8 intent(in) :: b
+            real*8 intent(in) :: gam
+            integer intent(in) :: ndistr
+            integer intent(in) :: nkmax
+            integer intent(in) :: npna
+            integer intent(in) :: ncoeff
+            real*8 intent(out) :: reff
+            real*8 intent(out) :: veff
+            real*8 intent(out) :: cext
+            real*8 intent(out) :: csca
+            real*8 intent(out) :: albedo
+            real*8 intent(out) :: asym
+            real*8 dimension(4,ncoeff),intent(out) :: alpha
+            real*8 dimension(2,ncoeff),intent(out) :: beta
+            real*8 dimension(4,4,npna),intent(out) :: f
+        end subroutine calcrand                       
+    end interface 
+end python module pytmatrixf
+

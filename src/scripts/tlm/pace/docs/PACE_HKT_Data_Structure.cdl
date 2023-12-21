@@ -1,0 +1,133 @@
+netcdf example.PACE_HKT {
+dimensions:
+	SC_hkt_pkts = UNLIMITED ;
+	OCI_hkt_pkts = UNLIMITED ;
+	HARP2_hkt_pkts = UNLIMITED ;
+	SPEXone_hkt_pkts = UNLIMITED ;
+	max_SC_packet = 2048 ;
+	max_OCI_packet = 1618 ;
+	max_HARP2_packet = 40 ;
+	max_SPEXone_packet = 298 ;
+	os_pkts = UNLIMITED ;
+ 	att_records = UNLIMITED ;
+ 	orb_records = UNLIMITED ;
+ 	tilt_records = UNLIMITED ;
+	quaternion_elements = 4 ;
+	vector_elements = 3 ;
+ 	
+// global attributes:
+		:title = "PACE HKT Data" ;
+		:instrument = "Observatory" ;
+		:product_name = "PACE.yyyymmddThhmmss.HKT.nc" ;
+		:processing_version = "V1.0" ;
+		:Conventions = "CF-1.6" ;
+		:institution = "NASA Goddard Space Flight Center, Ocean Biology Processing Group" ;
+		:license = "http://science.nasa.gov/earth-science/earth-science-data/data-information-policy/" ;
+		:naming_authority = "gov.nasa.gsfc.sci.oceancolor" ;
+		:keywords_vocabulary = "NASA Global Change Master Directory (GCMD) Science Keywords" ;
+		:stdname_vocabulary = "NetCDF Climate and Forecast (CF) Metadata Convention" ;
+		:creator_name = "NASA/GSFC" ;
+		:creator_email = "data@oceancolor.gsfc.nasa.gov" ;
+		:creator_url = "http://oceancolor.gsfc.nasa.gov" ;
+		:project = "PACE Project" ;
+		:publisher_name = "NASA/GSFC" ;
+		:publisher_email = "data@oceancolor.gsfc.nasa.gov" ;
+		:publisher_url = "http://oceancolor.gsfc.nasa.gov" ;
+		:processing_level = "1" ;
+		:cdm_data_type = "" ;
+		:history = "" ;
+		:time_coverage_start = "yyyy-mm-ddThh:mm:ss.sssZ" ;
+		:time_coverage_end = "yyyy-mm-ddThh:mm:ss.sssZ" ;
+		:date_created = "yyyy-mm-ddThh:mm:ss.sssZ" ;
+		:CDL_version_date = "2022-04-08" ;
+
+group: housekeeping_data {
+  variables:
+  	ubyte SC_HKT_packets(SC_hkt_pkts, max_SC_packet) ;
+  		SC_HKT_packets:long_name = "Spacecraft housekeeping telemetry packets" ;
+  	ubyte OCI_HKT_packets(OCI_hkt_pkts, max_OCI_packet) ;
+  		OCI_HKT_packets:long_name = "OCI housekeeping telemetry packets" ;
+  	ubyte HARP2_HKT_packets(HARP2_hkt_pkts, max_HARP2_packet) ;
+  		HARP2_HKT_packets:long_name = "HARP2 housekeeping telemetry packets" ;
+  	ubyte SPEXone_HKT_packets(SPEXone_hkt_pkts, max_SPEXone_packet) ;
+  		SPEXone_HKT_packets:long_name = "SPEXone housekeeping telemetry packets" ;
+  	ubyte oversize_packets(os_pkts) ;
+  		oversize_packets:long_name = "Buffer for packets exceeding maximum size" ;
+  } // group housekeeping_data
+  
+group: navigation_data {
+  variables:
+  	double att_time(att_records) ;
+  		att_time:_FillValue = -999.9 ;
+  		att_time:long_name = "Attitude sample time (seconds of day)" ;
+  		att_time:valid_min = 0. ;
+  		att_time:valid_max = 86400.999999 ;
+  		att_time:units = "seconds" ;
+  	float att_quat(att_records, quaternion_elements) ;
+  		att_quat:_FillValue = -999.9f ;
+  		att_quat:long_name = "Attitude quaternions (J2000 to spacecraft)" ;
+  		att_quat:valid_min = -1.f ;
+  		att_quat:valid_max = 1.f ;
+  		att_quat:units = "seconds" ;
+   	float att_rate(att_records, vector_elements) ;
+   		att_rate:_FillValue = -999.9f ;
+   		att_rate:long_name = "Attitude angular rates in spacecraft frame" ;
+   		att_rate:valid_min = -0.004f ;
+   		att_rate:valid_max = 0.004f ;
+   		att_rate:units = "radians/second" ;
+  	double orb_time(orb_records) ;
+  		orb_time:_FillValue = -999.9 ;
+  		orb_time:long_name = "Orbit vector time (seconds of day)" ;
+  		orb_time:valid_min = 0. ;
+  		orb_time:valid_max = 86400.999999 ;
+  		orb_time:units = "seconds" ;
+  	float orb_pos(orb_records, vector_elements) ;
+  		orb_pos:_FillValue = -9999999.f ;
+  		orb_pos:long_name = "Orbit position vectors (ECR)" ;
+  		orb_pos:valid_min = -7200000.f ;
+  		orb_pos:valid_max = 7200000.f ;
+  		orb_pos:units = "meters" ;
+  	float orb_vel(orb_records, vector_elements) ;
+  		orb_vel:_FillValue = -9999999.f ;
+  		orb_vel:long_name = "Orbit velocity vectors (ECR)" ;
+  		orb_vel:valid_min = -7600.f ;
+  		orb_vel:valid_max = 7600.f ;
+  		orb_vel:units = "meters/second" ;
+  	double orb_lon(orb_records) ;
+  		orb_lon:_FillValue = -999.9 ;
+  		orb_lon:long_name = "Orbit longitude (degrees East)" ;
+  		orb_lon:valid_min = -180. ;
+  		orb_lon:valid_max = 180. ;
+  		orb_lon:units = "degrees" ;
+  	double orb_lat(orb_records) ;
+  		orb_lat:_FillValue = -999.9 ;
+  		orb_lat:long_name = "Orbit latitude (degrees North)" ;
+  		orb_lat:valid_min = -90. ;
+  		orb_lat:valid_max = 90. ;
+  		orb_lat:units = "degrees" ;
+  	double orb_alt(orb_records) ;
+  		orb_alt:_FillValue = -999.9 ;
+  		orb_alt:long_name = "Orbit altitude" ;
+  		orb_alt:valid_min = 670. ;
+  		orb_alt:valid_max = 710. ;
+  		orb_alt:units = "meters" ;
+//  	ubyte adstate(att_records) ; // May or not have something like this
+//  		adstate:_FillValue = 255UB ;
+//  		adstate:long_name = "Current ADCS State" ;
+//  		adstate:flag_values = 0b, 1b, 2b, 3b, 4b, 5b ;
+//  		adstate:flag_meanings = "Wait Detumble AcqSun Point DeltaV Earth" ; // or whatever
+  	double tilt_time(tilt_records) ;
+  		tilt_time:_FillValue = -999.9 ;
+  		tilt_time:long_name = "Tilt sample time (seconds of day)" ;
+  		tilt_time:valid_min = 0. ;
+  		tilt_time:valid_max = 86400.999999 ;
+  		tilt_time:units = "seconds" ;
+	float tilt(tilt_records) ;
+		tilt:_FillValue = -999.9 ;
+		tilt:long_name = "Tilt angle" ;
+		tilt:valid_min = -20.1 ;
+		tilt:valid_max = 20.1 ;
+		tilt:units = "degrees" ;
+  } // group navigation_data
+
+}

@@ -1,0 +1,79 @@
+
+Instructions for the installation and running the VIIRS Darktarget code
+===============================================================
+
+These are instructions for configuring, building and running the
+following programs:
+
+    darktarget
+    generate_dt_luts
+
+Requirements:
+------------
+
+cmake, version 2.8 or later
+
+External libraries
+netCDF - version 4.3.22 or later, including the C++ API
+       - the C++ API is available via:
+     https://www.unidata.ucar.edu/downloads/netcdf/netcdf-cxx/index.jsp
+hdf5 - (needed by netCDF), version 1.8.10 or later
+hdf4 - (needed to read NCEP archive)
+zlib - (needed by hdf5), version 1.1.2 or later
+
+
+Configuring:
+-----------
+
+To create the darktarget and generate_dt_luts executables in the OCSSW system,
+copy the darktargetc folder into the OCSSW src folder and edit the src folder's
+CMakeLists.txt file to include the following line "add_subdirectory(darktargetc)".
+
+Run cmake as would be done normally to generate the OCSSW build files. Then run 
+
+    $ make install
+
+This will build the darktarget applications and install their binaries in the bin folder.
+
+Running:
+-------
+
+There are two environment variables required for correct operation:
+
+    OCDATAROOT and OCVARROOT
+
+
+Calling sequence for darktarget:
+-----------------------------------
+
+   $ darktarget ifile_l1b=path-to-L1B-file ifile_geo=path-to-GEO-file \
+                ofile=path-to-output-product-file  lut_nc4=path-to-netcdf-lut-file \
+                lut_grib=path-to-first-ncep-file lut_ozone=path-to-ozone-ncep-file 
+   
+All options listed should be considered mandatory. Example files are provided at
+the locations indicated here.
+   
+   lut_nc4=path-to-netcdf-lut-file (./LUTS/NETCDF/VIIRS_DARKTARGET_LUT_version_source.nc) \
+   lut_grib=path-to-first-ncep-file (./LUTS/ORIGINAL/N201523006_MET_NCEP_6h.hdf) 
+   lut_ozone=path-to-ozone-ncep-file (./LUTS/ORIGINAL/N201523000_O3_AURAOMI_24h.hdf)
+
+
+Calling sequence for generate_dt_luts:
+----------------------------------------
+
+   $ generate_dt_luts lut_nc4_path=./LUTS/NETCDF \
+                      lut_grib=/accounts/ssander2/test/darktarget/luts/gdas_lut.bin \
+                      lut_gascorr=./LUTS/ORIGINAL/gas_correction.dat \
+                      lut_ocean_big1=./LUTS/ORIGINAL/big_v1c1.dat.npp4 \
+                      lut_ocean_big2=./LUTS/ORIGINAL/big_v2c1.dat.npp4 \
+                      lut_ocean_big3=./LUTS/ORIGINAL/big_v3c1.dat.npp4 \
+                      lut_ocean_big4=./LUTS/ORIGINAL/big_v4c1.dat.npp4 \
+                      lut_ocean_small1=./LUTS/ORIGINAL/small_v1c1.dat.npp4 \
+                      lut_ocean_small2=./LUTS/ORIGINAL/small_v2c1.dat.npp4 \
+                      lut_ocean_small3=./LUTS/ORIGINAL/small_v3c1.dat.npp4 \
+                      lut_ocean_small4=./LUTS/ORIGINAL/small_v4c1.dat.npp4 \
+                      lut_land_w0488=./LUTS/ORIGINAL/lookup_land_w0488.npp3 \
+                      lut_land_w0551=./LUTS/ORIGINAL/lookup_land_w0551.npp3 \
+                      lut_land_w0670=./LUTS/ORIGINAL/lookup_land_w0670.npp3 \
+                      lut_land_w2257=./LUTS/ORIGINAL/lookup_land_w2257.npp3 \
+                      lut_land_aerosol_map=./LUTS/ORIGINAL/aerosol_land_map.v3

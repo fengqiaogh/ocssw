@@ -1,0 +1,352 @@
+/* This file is overwritten by the PACE GNC team with each delivery of the GNC
+|  FSW apps. Please contact the GNC team to provide feedback/changes to this 
+|  file.
+|============================================================================
+| bus_dleon_om.rec
+|============================================================================
+|  Mission:          PACE
+|  Originator:       Brian Amin
+|  ACS Lead:         Joseph Galante
+|  PDL:              Paul Mason, Huaizu You
+|
+|  Description:      PACE, Onboard Model (OM) GNC ACS Application Interface.
+|
+|  Packet APID:  128 [0x080]:  OM Ephem Telemetry
+|  Packet APID:  129 [0x081]:  OM Logic Telemetry
+|  Command APID: 119 [0x077]: Generic APID for all OM commands
+|
+|  CfsCommand commandCode:   0  :  NoCmd
+|  CfsCommand commandCode:  101 :  NoOp
+|  CfsCommand commandCode:  102 :  ResetCntrs
+|  CfsCommand commandCode:  103 :  EphemInit
+|-----------------------------------------------------------------------------
+|  REFERENCES:
+|    PACE-GNC-ICD-0108  PACE Flight Software (FSW) OM App Interface Control Document (ICD)
+|
+|-----------------------------------------------------------------------------
+|  NOTES:
+|    None
+|
+|============================================================================
+*/
+
+
+prototype System OnboardModels
+{
+
+  /* Instantiate wrapper code commands/telemetry */
+  ExternalCodeInterface ECI{}
+
+  /* ------------------- */
+  /* COMMAND DEFINITIONS */
+  /* ------------------- */
+
+  CfsCommand NoCmd
+  {
+    applicationId {range=0x077}
+    commandCode {range=0}
+  }
+
+  CfsCommand NoOp
+  {
+    applicationId {range=0x077}
+    commandCode {range=101}
+  }
+
+  CfsCommand ResetCntrs
+  {
+    applicationId {range=0x077}
+    commandCode {range=102}
+  }
+
+  CfsCommand EphemInit
+  {
+    applicationId {range=0x077}
+    commandCode {range=103}
+    /* Orbit propagation initial position */
+    cfs.F64 p_EarthToSc_Ecef_Init[3] {defaultValue=0} /**<-- orbit prop initial position */
+    /* Orbit propagation initial velocity  */
+    cfs.F64 v_EarthToSc_Ecef_Init[3] {defaultValue=0} /**<-- orbit prop initial velocity */
+    /* Time corresponding to PV to initialize orbit propagation with */
+    cfs.F64 t_TAI_Init {defaultValue=0} /**<-- position + velocity timestamp TAI */
+  }
+
+  /* --------------------- */
+  /* TELEMETRY DEFINITIONS */
+  /* --------------------- */
+
+  /* Discrete Conversions */
+  System cnv
+  {
+    DiscreteConversion OM_LogicStatusCode_CONVERSION
+    {
+      Dsc INIT {range = 0, bgColor = black, fgColor = green    }
+      Dsc NOOPSUCCEED {range = 10, bgColor = black, fgColor = green    }
+      Dsc RESETCTRSUCCEED {range = 20, bgColor = black, fgColor = green    }
+      Dsc EPHEMINITSUCCEED {range = 30, bgColor = black, fgColor = green    }
+      Dsc UNRECOGNIZEDFCNCODE {range = 255, bgColor = black, fgColor = red    }
+    }
+  }
+
+
+  prototype Structure CCSDS_TlmHdr
+  {
+    /* Packet identifier */
+    cfs.U8 StreamID[2] {} /**<-- Packet ID */
+    /* Bitfield containing packet sequence information */
+    cfs.U8 Sequence[2] {} /**<-- Packet seq info bitfield */
+    /*  */
+    cfs.U8 PktLen[2] {units = "byte"} /**<-- Packet length (bytes) */
+    /* Seconds field of timestamp. Formatted as array to avoid padding in header */
+    cfs.U16 Time_sec[2] {units = "sec"} /**<-- timestamp seconds */
+    /*  */
+    cfs.U16 Time_subsec {} /**<-- timestamp subseconds */
+  }
+
+
+  CfsTelemetryPacket ephem
+  {
+    timeout="3"
+    applyWhen={FieldInRange{field = applicationId, range = 0x0080}}
+    /* Padding for packet alignment */
+    cfs.U8 Padding[4] {} /**<-- padding */
+    /* Seconds since TAI epoch */
+    cfs.F64 FSWTime {units = "sec"} /**<-- seconds since TAI epoch */
+    /* Solar position wrt earth inertial */
+    cfs.F64 sunPosJ2000[3] {units = "m"} /**<-- sun position wrt ECI */
+    /* Lunar position wrt earth inertial */
+    cfs.F64 moonPosJ2000[3] {units = "m"} /**<-- moon position wrt ECI */
+    /* Solar velocity wrt earth inertial */
+    cfs.F64 sunVelJ2000[3] {units = "m/sec"} /**<-- sun velocity wrt ECI */
+    /* Lunar velocity wrt earth inertial */
+    cfs.F64 moonVelJ2000[3] {units = "m/sec"} /**<-- moon velocity wrt ECI */
+    /* PACE position in earth intertial frame */
+    cfs.F64 scPosJ2000[3] {units = "m"} /**<-- PACE position wrt ECI */
+    /* PACE velocity wrt earth intertial */
+    cfs.F64 scVelJ2000[3] {units = "m/sec"} /**<-- PACE velocity wrt ECI */
+    /* Timestamp associated with SC P/V values relative to GPS epoch */
+    cfs.F64 PV_Time_GPS {units = "sec"} /**<-- timestamp relative to GPS epoch*/
+    /* Direction cosine matrix converting from ECEF to ECI J2000 frame. */
+    cfs.F64 DCM_ecef2eci[3][3] {offsetFrom="previousField"}
+    {
+      DCM_ecef2eci[0][0] { offset={0,0} }
+      DCM_ecef2eci[0][1] { offset={16,0} }
+      DCM_ecef2eci[0][2] { offset={16,0} }
+      DCM_ecef2eci[1][0] { offset={-48,0} }
+      DCM_ecef2eci[1][1] { offset={16,0} }
+      DCM_ecef2eci[1][2] { offset={16,0} }
+      DCM_ecef2eci[2][0] { offset={-48,0} }
+      DCM_ecef2eci[2][1] { offset={16,0} }
+      DCM_ecef2eci[2][2] { offset={16,0} }
+    } /**<-- ECEF to ECI J2000 rotation matrix */
+    /* Earth magnetic field in ECI J2000 frame, using 7th degree IGRF model. */
+    cfs.F64 magfieldEci[3] {units = "T"} /**<-- Earth mag field ECI */
+    /* Earth magnetic field in ECEF frame, using 7th degree IGRF model. */
+    cfs.F64 magfieldEcef[3] {units = "T"} /**<-- Earth mag field ECEF */
+    /* flag indicating is S/C in eclipse. Value=1 (True) if in eclipse. */
+    cfs.U8 isEclipse {} /**<-- boolean in eclipse flag */
+    /* Flag indicating is SC ephem is valid */
+    cfs.U8 ephemValid {} /**<-- spacecraft ephemeris validity flag */
+    /* Compiler-added padding */
+    cfs.U8 Padding2[6] {} /**<-- padding */
+  }
+
+
+  CfsTelemetryPacket logic
+  {
+    timeout="5"
+    applyWhen={FieldInRange{field = applicationId, range = 0x0081}}
+    /* Padding to maintain packet alignment */
+    cfs.U8 Padding[4] {} /**<-- padding */
+    /* Count of commands successfully executed */
+    cfs.U32 CmdProcCtr {} /**<-- successful command execution counter */
+    /* Count of rejected commands */
+    cfs.U32 CmdErrCtr {} /**<-- rejected command counter */
+    /* initial PACE position for propagator */
+    cfs.F64 p_EarthToSc_Ecef_Init[3] {units = "m"} /**<-- initial PACE position */
+    /* initalize PACE velocity for propagator */
+    cfs.F64 v_EarthToSc_Ecef_Init[3] {units = "m/s"} /**<-- initial PACE velocity */
+    /* Timestamp associated with init Pos/Vel */
+    cfs.F64 t_TAI_Init {units = "sec"} /**<-- initial PACE pos/vel timestamp */
+    /* Flag indicating status of logic */
+    cfs.U8 LogicStatus {conversion = cnv.OM_LogicStatusCode_CONVERSION} /**<-- logic status flag */
+    /* Flag indicating to reinitalize propagation */
+    cfs.U8 ReInitEphem {} /**<-- reinit propagation flag */
+    /* Flag indicating if propagation has been initalized */
+    cfs.U8 EphemHasBeenInit {} /**<-- propagation has been init flag */
+    /* Compiler-added padding */
+    cfs.U8 Padding2[5] {} /**<-- padding */
+  }
+
+  /* ----------------- */
+  /* Table DEFINITIONS */
+  /* ------------------*/
+  System TABLE
+  {  
+    System sources {
+      TelemetrySource OM_LUN_TBL {}
+      TelemetrySource OM_NAV_TBL {}
+      TelemetrySource OM_SOL_TBL {}
+      TelemetrySource OM_TIME_TBL {}
+      TelemetrySource OM_WGS84_TBL {}
+      TelemetrySource OM_IGRF_TBL {}
+    }
+
+    cfs.Table OM_LUN_TBL
+    {
+      source=sources.OM_LUN_TBL
+      /* Mean inclination of the lunar orbit to the ecliptic */
+      cfs.F64 Inclination {units = "rad"} /**<-- mean inclination of lunar orbit to ecliptic */
+      /* Constant term in a linear fit for computing mean longitude of the ascending node of the lunar orbit on the ecliptic */
+      cfs.F64 AscNodeCf0 {units = "rad"} /**<-- linear fit constant for mean longitude of ascending node of lunar orbit on ecliptic */
+      /* Slope term in a linear fit for computing mean longitude of the ascending node of the lunar orbit on the ecliptic */
+      cfs.F64 AscNodeCf1 {units = "rad/day"} /**<-- linear fit slope for mean longitude of ascending node of lunar orbit on ecliptic */
+      /* Constant term in a linear fit for computing the mean longitude of the moon, in ecliptic to ascending node, then along mean orbit */
+      cfs.F64 LongCoef0 {units = "rad"}  /**<-- linear fit constant for mean longitude of the moon */
+      /* Slope term in a linear fit for computer the the mean longitude of the moon, in ecliptic to ascending node, then along mean orbit */
+      cfs.F64 LongCoef1 {units = "rad/day"} /**<-- linear fit slope for mean longitude of the moon */
+      /* Constant term in a linear fit for computing mean longitude of the lunar perigee, in ecliptic to ascending node, then along mean orbit */
+      cfs.F64 PerigeeCf0 {units = "rad"} /**<-- linear fit constant for mean longitude of lunar perigee */
+      /* Slope term in a linear fit for computing mean longitude of the lunar perigee, in ecliptic to ascending node, then along mean orbit */
+      cfs.F64 PerigeeCf1 {units = "rad/day"} /**<-- linear fit slope for mean longitude of lunar perigee */
+      /* Constant term in a linear fit for computing the mean elongation of the moon from the sun */
+      cfs.F64 ElongCf0 {units = "rad"} /**<-- linear fit constant for mean elongation of moon  */
+      /* Slope term in a linear fit for computing the mean elongation of the moon from the sun */
+      cfs.F64 ElongCf1 {units = "rad/day"} /**<-- linear fit slope for mean elongation of moon */
+      /* Constant term in a linear fit for computing the sun's mean anomaly */
+      cfs.F64 SolAnomCf0 {units = "rad"} /**<-- linear fit constant for sun mean anomaly */
+      /* Slope term in a linear fit for computing the sun's mean anomaly */
+      cfs.F64 SolAnomCf1 {units = "rad/day"} /**<-- linear fit slope for sun mean anomaly */
+      /* Constant term in a linear fit for computing the mean inclination of the ecliptic with respect to the mean Earth equator of date.  Since we are computing lunar position referenced to the J2000 mean of date coordinates,  this value must be set to a constant equal to the obliquity of the mean ecliptic at the J2000 epoch */
+      cfs.F64 OblEclCf0 {units = "rad"} /**<-- linear fit constant for mean inclination of ecliptic */
+      /* Slope term in a linear fit for computing computing the mean inclination of the ecliptic with respect to the mean Earth equator of date. Since we are computing lunar position referenced to the J2000 mean of date coordinates,  the obliquity  should be constant.  Therefore, this slope value must be set to a ZERO */
+      cfs.F64 OblEclCf1 {units = "rad/day"} /**<-- linear fit slope for mean inclination of ecliptic */
+      /* Radius of the Earth */
+      cfs.F64 ErthRad {units = "km"} /**<-- Earth radius */
+      /* Julian Date corresponding to the constant terms in the linear polynomial fits. [i.e., the values of the orbit elements at LunarModelTimeDays=0] */
+      cfs.F64 JulTimeCoef {units = "day"} /**<-- Julian Date for linear polynomial fits */
+      /* January 1, 2000, 12 hour UTC, represented in Julian Date format.  The time used in the precession approximation formulae [A,B,Cprime] must be referenced to J2000 time which is JD 2451545.0. (days) [Ref: p. B16-B19, The Astronomical Almanac for the Year1998. U.S. Government Printing Office, Washington, DC. 1997] */
+      cfs.F64 JulTime2000 {units = "day"} /**<-- Julian Date time precssion approx  */
+      /* J2000 Correction constant */
+      cfs.F64 J2000A1 {units = "rad"} /**<-- J2000 correction consant  */
+      /* J2000 Correction constant */
+      cfs.F64 J2000A2 {units = "rad"} /**<-- J2000 correction consant  */
+      /* J2000 Correction constant */
+      cfs.F64 J2000B1 {units = "rad"} /**<-- J2000 correction consant  */
+      /* J2000 Correction constant */
+      cfs.F64 J2000B2 {units = "rad"} /**<-- J2000 correction consant  */
+      /* J2000 Correction constant */
+      cfs.F64 J2000Cprim1 {units = "rad"} /**<-- J2000 correction consant  */
+      /* J2000 Correction constant */
+      cfs.F64 J2000Cprim2 {units = "rad"} /**<-- J2000 correction consant  */
+      /* J2000 Correction constant */
+      cfs.F64 J2000Cprim3 {units = "rad"} /**<-- J2000 correction consant  */
+    }
+
+    cfs.Table OM_NAV_TBL
+    {
+      source=sources.OM_NAV_TBL
+      /* Earth gravitational parameter, G*M_earth */
+      cfs.F64 GravParamEarth {units = "m^3/sec^2"} /**<-- Earth grav param G*M_earth  */
+      /* Sun gravitational parameter, G*M_sun */
+      cfs.F64 GravParamSun {units = "m^3/sec^2"} /**<-- Sun grav param G*M_sun */
+      /* Moon gravitational parameter, G*M_moon */
+      cfs.F64 GravParamMoon {units = "m^3/sec^2"} /**<-- Moon grav param G*M_moon */
+      /* Earth radius at equator in the geopotential model */
+      cfs.F64 EarthRadiusEquator {units = "m"} /**<-- Earth equitorial radius */
+      /* Earth mean radius */
+      cfs.F64 EarthRadiusMean {units = "m"} /**<-- Earth mean radius */
+      /* Unnormalized second degree zonal harmonic coefficient */
+      cfs.F64 J2 {} /**<-- unnormalized 2nd degree zonal harmonic coeff */
+      /* Unnormalized second degree sectoral harmonic cosine coefficient */
+      cfs.F64 c22 {} /**<-- unnormalized 2nd degree sectoral harmonic cos coeff */
+      /* Unnormalized second degree sectoral harmonic sine coefficient */
+      cfs.F64 s22 {} /**<-- unnormalized 2nd degree sectoral harmonic sine coeff */
+      /* constant term coefficient in GMST prediction */
+      cfs.F64 GmstCf0 {} /**<-- GMST prediction const coeff */
+      /* Day0 term coefficient in GMST prediction */
+      cfs.F64 GmstCfD0 {} /**<-- GMST prediction Day0 coeff */
+      /* Hour term coefficient in GMST prediction */
+      cfs.F64 GmstCfH {} /**<-- GMST prediction hour coeff */
+      /* century square term coefficient in GMST prediction */
+      cfs.F64 GmstCfT2 {} /**<-- GMST prediction century square term coeff */
+      /* Default position value used when om ephem has not been initialized */
+      cfs.F64 p_ECI_NotBeenInit[3] {units = "m"} /**<-- default PACE position */
+      /* Default velocity value used when om ephem has not been initialized */
+      cfs.F64 v_ECI_NotBeenInit[3] {units = "m/s"} /**<-- default PACE velocity */
+      /* Expected magnitude of position vector for sanity checking GPS data */
+      cfs.F64 expectedPosMag {units = "m"} /**<-- expected position magnitude */
+      /* Expected variance of position vector magnitude within which GPS data is considered valid */
+      cfs.F64 posMagTol {units = "m"} /**<-- expected position magnitude tolerance */
+      /* Expected magnitude of velocity vector for sanity checking GPS data */
+      cfs.F64 expectedVelMag {units = "m/sec"} /**<-- expected velocity magnitude */
+      /* Expected variance of velocity vector magnitude within which GPS data is considered valid */
+      cfs.F64 velMagTol {units = "m/sec"} /**<-- expected velocity magnitude tolerance */
+    }
+
+    cfs.Table OM_SOL_TBL
+    {
+      source=sources.OM_SOL_TBL
+      /* Time in days from Julian Date January 1,2000, 12 hour UTC */
+      cfs.F64 SunEpoch {units = "day"} /**<-- number of days since Julian Date Jan 1, 2000 */
+      /* Cosine of sun's inclination with respect to the Earth's equatorial plane. [i.e. Cosine of the obliquity of the ecliptic.] */
+      cfs.F64 CosSunIncl {} /**<-- cos of sun inclination wrt Earth equatorial plane */
+      /* Sine of sun's inclination with respect to the Earth's equatorial plane. [i.e. Sine of the obliquity of the ecliptic.] */
+      cfs.F64 SinSunIncl {} /**<-- sine of sun inclination wrt Earth equatorial plane */
+      /* Constant term in a linear fit for computing Mean Solar Anomaly */
+      cfs.F64 SunMeanCoef1 {units = "rad"} /**<-- linear fit constant for Mean Solar Anomaly */
+      /* Slope term in a linear fit for computing Mean Solar Anomaly */
+      cfs.F64 SunMeanCoef2 {units = "rad/day"} /**<-- linear fit slope for Mean Solar Anomaly */
+      /* Constant term in a linear fit for computing Mean Solar Longitude */
+      cfs.F64 SolLongCoef1 {units = "rad"} /**<-- linear fit constant for Mean Solar Longitude */
+      /* Slope term in a linear fit for computing Mean Solar Longitude */
+      cfs.F64 SolLongCoef2 {units = "rad/day"} /**<-- linear fit slope for Mean Solar Longitude */
+      /* Coefficients for correcting Mean Solar Longitude to Ecliptic Longitude */
+      cfs.F64 SunAnomCrCf1 {units = "rad"} /**<-- corr coeff for Mean Solar Long to Ecliptic Long */
+      /* Coefficients for correcting Mean Solar Longitude to Ecliptic Longitude */
+      cfs.F64 SunAnomCrCf2 {units = "rad"} /**<-- corr coeff for Mean Solar Long to Ecliptic Long */
+      /* One astronomical unit */
+      cfs.F64 ErthSunDst0 {units = "km/au"} /**<-- one Astronomical Unit */
+      /* Coefficients for computing the current distance from the Earth to the Sun */
+      cfs.F64 ErthSunDst1 {units = "au"} /**<-- Earth Sun distance coeff */
+      /* Coefficients for computing the current distance from the Earth to the Sun */
+      cfs.F64 ErthSunDst2 {units = "au"} /**<-- Earth Sun distance coeff */
+      /* Coefficients for computing the current distance from the Earth to the Sun */
+      cfs.F64 ErthSunDst3 {units = "au"} /**<-- Earth Sun distance coeff */
+    }
+
+    cfs.Table OM_TIME_TBL
+    {
+      source=sources.OM_TIME_TBL
+      /* Julian date for J2000 epoch (Jan 1 2000) */
+      cfs.F64 JulianDateJ2000 {} /**<-- J2000 epoch in Julian Date */
+      /*  */
+      cfs.F64 LeapSecsBefore1972 {} /**<-- number of leap secs */
+      /* To be refactored to use 2017 as reference to shorten table */
+      cfs.F64 LeapSecsTable[33] {} /**<-- leap secs table*/
+    }
+
+    cfs.Table OM_WGS84_TBL
+    {
+      source=sources.OM_WGS84_TBL
+      /* WGS84 model eccentricity parameter */
+      cfs.F64 eccentricity {} /**<-- WBS84 eccentricity */
+      /* WGS84 model semimajor axis parameter */
+      cfs.F64 semimajoraxis {units = "m"} /**<-- WGS84 semimajor axis */
+    }
+
+    cfs.Table OM_IGRF_TBL
+    {
+      source=sources.OM_IGRF_TBL
+      /* Schmidt semi-normalised spherical harmonic coefficients in IGRF geomagnetic model. (g,h) are assosiated with (cos,sin) terms. */
+      cfs.F32 gh[63] {units = "nT"} /**<-- cos and sine coeffs for IGRF harmonics */
+      /* Secular variation of spherical harmonic coefficients (g,h) */
+      cfs.F32 sv[63] {units = "nT/yr"} /**<-- secular variation */
+      /* IGRF model epoch. */
+      cfs.U16 minYear {units = "yr"} /**<-- IGRF model year */
+      /* Unused field to maintain alignment */
+      cfs.U8 Padding[6] {} /**<-- padding */
+    }
+  }
+}
+

@@ -1,0 +1,600 @@
+/*
+|=================================================================================
+| bus_cab_evd_tlm.rec
+|=================================================================================
+|  Mission:          PACE
+|  Originator:       Bill Hansel
+|  Responsible TC:   Kris Heefner
+|  Responsible PDL:  Mark Pallone
+|
+|  Description:  PACE, Tilt and Solar Array Drive Electronics (TSADE)
+|                 Card Telemetry.
+|
+|  Packet APID:  198 (0x0C6):  DIG   Digital Telem
+|                199 (0x0C7):  ANLG  Analog Telem
+|                465 (0x1D1):  FSM   TILT Finite State Machine data (FSM), DEBUG SET 1
+|                466 (0x1D2):  DBUG  Register data dump, DEBUG SET 2
+|TSADECardHK
+|---------------------------------------------------------------------------------
+|  REFERENCES:
+|    PACE-MECSM_ICD-0062 (Rev A): Tilt and Solar Array Drive Electronics (TSADE)
+|                                 1553 Data Interface Control Protocol Document
+|    PACE-SYS-ICD-0115   (Rev -): PACE SC 1553 Interface Control Document
+|
+|---------------------------------------------------------------------------------
+|  NOTES:
+|    None
+|
+|=================================================================================
+*/
+
+/*
+==============================================================================
+== APID 198 (0x0C6):  DIG   Digital Telem                                   ==
+==============================================================================
+*/
+
+prototype CfsTelemetryPacket TSADE_DIG {
+    timeout="3"
+    applyWhen={FieldInRange{field=applicationId, range=198}}
+    XferStatHdr1553 XfrHdr1553               {}                                                                                          /**<-- 4 bytes of 1553 Header that follows CCSDS header and Secondary Header (time)*/
+  /* Begin Sub-address 1*/
+  U12     WORD_00                            {lengthInBits=16}                                                                           /**<-- Contents of the entire 16 bit WORD 00 */
+     U12     RSVD_00                         {offset={-2 0}, lengthInBits=2}                                                             /**<-- Reserved bits 0-1 */
+     U12     MCE_REV                         {lengthInBits=2, conversion=pace_tsade_mce_rev_dsc}                                         /**<-- MCE Revision */
+     U12     FPGA_VER                        {lengthInBits=12}                                                                           /**<-- FPGA Version */
+  U12     WORD_01                            {lengthInBits=16}                                                                           /**<-- Contents of the entire 16 bit WORD 01 */
+     U12     SADA_SPCL_LOC                   {offset={-2 0}, lengthInBits=2, conversion=pace_tsade_specialLoc_dsc, limit=tsade_lim_loc } /**<-- 00 = Not Special Loc 01 = Home 10 = NEG EOT 11 = POS EOT */
+     U12     SADA_STP_ERR_FLG                {lengthInBits=1,  generateMnemonic="no"}                                                    /**<-- NOT USED FOR PACE Step Error pace_tsade_sht_dscFlag, 00 = No Error, 01 = Error */
+     U12     SADA_RLY_STATUS                 {lengthInBits=1,  conversion=pace_tsade_relaystatus_dsc}                                    /**<-- 0 = Open Relay, 1 = Closed Relay */
+     U12     SADA_STEP_PROFILE               {lengthInBits=2,  conversion=pace_tsade_stepprofile_dsc}                                    /**<-- 00 = Cardinal Stepping, 01 = Smoothed Cardinal Stepping, 10 = Sinusoidal */
+     U12     SADA_CUR_DIR                    {lengthInBits=1,  conversion=pace_tsade_curdir_dsc}                                         /**<-- 0 = Negative, 1 = Positive */
+     U12     SADA_LAST_COMM_STATE            {lengthInBits=3,  conversion=pace_tsade_comstate_dsc}                                       /**<-- 001 = State 1, 010 = State 2, 011 = State 3, 100 = Sate 4, 101 = State 5, 110 State 6, 000 & 111 = Not Valid */
+     U12     SADA_LAST_STP_HOLD_TIME_STAT    {lengthInBits=1,  conversion=pace_tsade_sht_dsc}                                            /**<-- 0 = Disabled (mtr pwr on full time), 1 = Enabled (mtr pwr off @ end of step) */
+     U12     SADA_H_BRIDGE_BOOST             {lengthInBits=1,  conversion=pace_tsade_enadis_dsc}                                         /**<-- 0 = Disabled, 1 = Enabled */
+     U12     SADA_PWR_LVL                    {lengthInBits=2,  conversion=pace_tsade_pwrlvl_dsc, limit=sadalimpwrlvl }                   /**<-- 00 = 50% maxV, 01 = 60% maxV, 10 = 80% maxV, 11 = 100% maxV  */
+     U12     SADA_HOME_INIT                  {lengthInBits=1,  conversion=pace_tsade_homeinit_dsc}                                       /**<-- 0 = Encoder not initialized, 1 = initialized */
+     U12     SADA_CNT_ENA                    {lengthInBits=1,  conversion=pace_tsade_enadis_dsc}                                         /**<-- Count enable */
+  U12     WORD_02                            {lengthInBits=16}                                                                           /**<-- Contents of the entire 16 bit WORD 02 */
+     U12     SADA_ENCPOS                     {offset={-2 0}, conversion=pace_tsade_enc_sada, units="deg"}                                     /**<-- Motor 0 (SADA) reported encoder pos, x'3C4A' -- x'7FFF' (-130 to -0.0075 degrees from home), x'8000' = home, x'8001 -- x'C3B6 = 0.0075 to 130 */
+  U12     WORD_03                            {lengthInBits=16}                                                                           /**<-- Contents of the entire 16 bit WORD 03 */
+     U12     SADA_CMDPOS                     {offset={-2 0}, conversion=pace_tsade_enc_sada, units="deg"}                                     /**<-- Motor 0 (SADA) Commanded pos,  03 x'3C4A' -- x'7FFF' (-130 to -0.0075 degrees from home), x'8000' = home, x'8001 -- x'C3B6 = 0.0075 to 130 */
+  U12     WORD_04                            {lengthInBits=16}                                                                           /**<-- Contents of the entire 16 bit WORD 04 */
+     U12     SADA_PULSE_RATE                 {offset={-2 0}}                                                                             /**<-- Motor 0 (SADA) Pulse rate, x'0000' -- x'007C' not valid, x'007D' -- x'FFFF' 5msec to 2.62114 sec between steps, # of 40usec clock cycles */
+  U12     WORD_05                            {lengthInBits=16}                                                                           /**<-- Contents of the entire 16 bit WORD 05 */
+     U12     SADA_PULSE_WIDTH                {offset={-2 0}}                                                                             /**<-- Motor 0 (SADA) Pulse Width,  x'0000' -- x'007C' not valid, x'007D' -- x'FFFF' 5msec to 2.62114 sec step pulse width, # of 40usec clock cycles */
+  U12     WORD_06                            {lengthInBits=16}                                                                           /**<-- Contents of the entire 16 bit WORD 06 */
+     U12     SADA_LAST_STP_PULSE_LENGTH      {offset={-2 0}}                                                                             /**<-- Motor 0 (SADA) Last Step Pulse Length, x'0000' -- x'007C' not valid, x'007D' -- x'FFFF' 5msec to 2.62114 sec last step pulse width, # of 40usec clock cycles */
+  U12     WORD_07                            {lengthInBits=16}                                                                           /**<-- Contents of the entire 16 bit WORD 07 */
+     U12     SADA_INDEX                      {offset={-2 0}, lengthInBits=1 }                                                            /**<-- Motor 0 (SADA) Index Track, D'15 = Index track, D'14 = Sine track, D'13 = Cosine track, D'12 = Hemisphere track, D'11 = Almost Home track, D'10 = Tavle limits track */
+     U12     SADA_SIN                        {lengthInBits=1 }                                                                           /**<-- Motor 0 (SADA) Sine Track */
+     U12     SADA_COS                        {lengthInBits=1 }                                                                           /**<-- Motor 0 (SADA) Cosine Track */
+     U12     SADA_HEMI                       {lengthInBits=1 }                                                                           /**<-- Motor 0 (SADA) Hemisphere Track */
+     U12     SADA_ALMOST_HOME                {lengthInBits=1 }                                                                           /**<-- Motor 0 (SADA) Almost Home */
+     U12     SADA_TRVL_LIM                   {lengthInBits=1 }                                                                           /**<-- Motor 0 (SADA) Travel Limits */
+     U12     SADA_EOT_OVRD_STAT              {lengthInBits=2, conversion=pace_tsade_eot_status, limit=limEotoverride }                   /**<-- Motor 0 (SADA) EOT Override Status */
+     U12     SADA_W7_RSVD                    {lengthInBits=1 }                                                                           /**<-- Motor 0 (SADA) Reserved */
+     U12     SADA_RAW_HEMI                   {lengthInBits=1, conversion=tsade_processed_hemi_dsc }                                      /**<-- Motor 0 (SADA) Raw Hemi */
+     U12     SADA_PROCESSED_HEMI             {lengthInBits=1, conversion=tsade_processed_hemi_dsc }                                      /**<-- Motor 0 (SADA) Procdessed Hemi */
+     U12     SADA_INVERTED_HEMI              {lengthInBits=1, conversion=tsade_hemi_dsc, limit=limErrFlag }                              /**<-- Motor 0 (SADA) Inverted Hemi */
+     U12     SADA_W3_RSVD                    {lengthInBits=1 }                                                                           /**<-- Motor 0 (SADA) Reserved */
+     U12     SADA_LED_CMD_PWR_LVL            {lengthInBits=3, conversion=pace_tsade_ledi_dsc}                                            /**<-- Motor 0 (SADA) LED Commanded Power Level, 0 -011 = commanded current lvl, 100-111 = encoder off */
+  U12     WORD_08                            {lengthInBits=16}                                                                           /**<-- Contents of the entire 16 bit WORD 08 */
+     U12     SADA_DRVR_CUR                   {offset={-2 0}, conversion=driveri_poly, units="mA" }                                       /**<-- Motor 0 LED Driver Current, 1cnt = 0.015259 milliamp */
+  U12     WORD_09                            {lengthInBits=16}                                                                           /**<-- Contents of the entire 16 bit WORD 09 */
+     U12     TILT_SPCL_LOC                   {offset={-2 0}, lengthInBits=2, conversion=pace_tsade_specialLoc_dsc, limit=tsade_lim_loc } /**<-- 00 =  Not a special location, 01 = at home, 10 = CW end of travel, 11, CCW end of travel */
+     U12     TILT_STP_ERR_FLG                {lengthInBits=1, generateMnemonic="no" }                                                    /**<-- NOT USED FOR PACE Step Error Flag, 00 = no error, 01 = error */
+     U12     TILT_RLY_STATUS                 {lengthInBits=1, conversion=pace_tsade_relaystatus_dsc }                                    /**<-- 0 = open (disabled), 1 = closed (enabled) */
+     U12     TILT_STEP_PROFILE               {lengthInBits=2, conversion=pace_tsade_stepprofile_dsc }                                    /**<-- 00 = cardinal step, 01 = smoothed cardinal stepping,  10 = Sinusoidal */
+     U12     TILT_CUR_DIR                    {lengthInBits=1, conversion=pace_tsade_curdir_dsc }                                         /**<-- 0 = Negative, 1 = Positive */
+     U12     TILT_LAST_COMM_STATE            {lengthInBits=3, conversion=pace_tsade_comstate_dsc }                                       /**<-- 001 = State 1, 010 = State 2, 011 = State 3, 100 = Sate 4, 101 = State 5, 110 State 6, 000 & 111 = Not Valid */
+     U12     TILT_LAST_STP_HOLD_TIME_STAT    {lengthInBits=1, conversion=pace_tsade_sht_dsc }                                            /**<-- 0 = Disabled (mtr pwr on full time), 1 = Enabled (mtr pwr off @ end of step) */
+     U12     TILT_H_BRIDGE_BOOST             {lengthInBits=1, conversion=pace_tsade_enadis_dsc }                                         /**<-- 0 = Disabled, 1 = Enabled  */
+     U12     TILT_PWR_LVL                    {lengthInBits=2, conversion=pace_tsade_pwrlvl_dsc, limit=tltlimpwrlvl }                     /**<-- 00 = 50% maxV, 01 = 60% maxV, 10 = 80% maxV, 11 = 100% maxV */
+     U12     TILT_HOME_INIT                  {lengthInBits=1, conversion=pace_tsade_homeinit_dsc }                                       /**<-- 0 = Encoder not initialized, 1 = initialized */
+     U12     TILT_CNT_ENA                    {lengthInBits=1, conversion=pace_tsade_enadis_dsc }                                         /**<-- Count enable */
+  U12     WORD_10                            {lengthInBits=16}                                                                           /**<-- Contents of the entire 16 bit WORD 10 */
+     U12     TILT_ENCPOS                     {offset={-2 0}, conversion=pace_tsade_enc_tilt, units="deg"}                                     /**<-- Motor 1 (TILT) encoder pos, reported encoder pos, x'3C4A' -- x'7FFF' (-130 to -0.0075 degrees from home), x'8000' = home, x'8001 -- x'C3B6 = 0.0075 to 130 */
+  U12     WORD_11                            {lengthInBits=16}                                                                           /**<-- Contents of the entire 16 bit WORD 11 */
+     U12     TILT_CMDPOS                     {offset={-2 0}, conversion=pace_tsade_enc_tilt, units="deg"}                                     /**<-- Motor 1 (TILT) Commanded pos,  03 x'3C4A' -- x'7FFF' (-130 to -0.0075 degrees from home), x'8000' = home, x'8001 -- x'C3B6 = 0.0075 to 130 */
+  U12     WORD_12                            {lengthInBits=16}                                                                           /**<-- Contents of the entire 16 bit WORD 12 */
+     U12     TILT_PULSE_RATE                 {offset={-2 0}}                                                                             /**<-- Motor 1 (TILT) Pulse rate, x'0000' -- x'007C' not valid, x'007D' -- x'FFFF' 5msec to 2.62114 sec between steps, # of 40usec clock cycles */
+  U12     WORD_13                            {lengthInBits=16}                                                                           /**<-- Contents of the entire 16 bit WORD 13 */
+     U12     TILT_PULSE_WIDTH                {offset={-2 0}}                                                                             /**<-- Motor 1 (TILT) Pulse Width,  x'0000' -- x'007C' not valid, x'007D' -- x'FFFF' 5msec to 2.62114 sec step pulse width, # of 40usec clock cycles */
+  U12     WORD_14                            {lengthInBits=16}                                                                           /**<-- Contents of the entire 16 bit WORD 14 */
+     U12     TILT_LAST_STP_PULSE_LENGTH      {offset={-2 0}}                                                                             /**<-- Motor 1 (TILT) Last Step Pulse Length,  x'0000' -- x'007C' not valid, x'007D' -- x'FFFF' 5msec to 2.62114 sec last step pulse width, # of 40usec clock cycles */
+  U12     WORD_15                            {lengthInBits=16}                                                                           /**<-- Contents of the entire 16 bit WORD 15 */
+     U12     TILT_INDEX                      {offset={-2 0}, lengthInBits=1 }                                                            /**<-- Motor 1 (TILT) Index Track, D'15 = Index track, D'14 = Sine track, D'13 = Cosine track, D'12 = Hemisphere track, D'11 = Almost Home track, D'10 = Tavle limits track */
+     U12     TILT_SIN                        {lengthInBits=1 }                                                                           /**<-- Motor 1 (TILT) Sine Track */
+     U12     TILT_COS                        {lengthInBits=1 }                                                                           /**<-- Motor 1 (TILT) Cosine Track */
+     U12     TILT_HEMI                       {lengthInBits=1 }                                                                           /**<-- Motor 1 (TILT) Hemisphere Track */
+     U12     TILT_ALMOST_HOME                {lengthInBits=1 }                                                                           /**<-- Motor 1 (TILT) Almost Home */
+     U12     TILT_TRVL_LIM                   {lengthInBits=1 }                                                                           /**<-- Motor 1 (TILT) Travel Limits */
+     U12     TILT_EOT_OVRD_STAT              {lengthInBits=2, conversion=pace_tsade_eot_status, limit=limEotoverride }                   /**<-- Motor 1 (TILT) EOT Override Status */
+     U12     TILT_W15_RSVD                   {lengthInBits=1 }                                                                           /**<-- Motor 1 (TILT) Reserved */
+     U12     TILT_RAW_HEMI                   {lengthInBits=1, conversion=tsade_processed_hemi_dsc }                                      /**<-- Motor 0 (TILT) Raw Hemi */
+     U12     TILT_PROCESSED_HEMI             {lengthInBits=1, conversion=tsade_processed_hemi_dsc }                                      /**<-- Motor 0 (TILT) Procdessed Hemi */
+     U12     TILT_INVERTED_HEMI              {lengthInBits=1, conversion=tsade_hemi_dsc, limit=limErrFlag }                              /**<-- Motor 0 (TILT) Inverted Hemi */
+     U12     TILT_W3_RSVD                    {lengthInBits=1 }                                                                           /**<-- Motor 0 (TILT) Reserved */
+     U12     TILT_LED_CMD_PWR_LVL            {lengthInBits=3, conversion=pace_tsade_ledi_dsc }                                           /**<-- Motor 1 (TILT) LED Commanded Power Level */
+  U12     WORD_16                            {lengthInBits=16}                                                                           /**<-- Contents of the entire 16 bit WORD 16 */
+     U12     TILT_DRVR_CUR                   {offset={-2 0}, conversion=driveri_poly, units="mA" }                                       /**<-- Motor 1 LED Driver Current, 1cnt = 0.015259 milliamp */
+  U12     WORD_17                            {lengthInBits=16}                                                                           /**<-- Contents of the entire 16 bit WORD 17 */
+     U12     CMD_ECHO_TYPE                   {offset={-2 0}, lengthInBits=5, conversion=pace_tsade_cmd_type,postPadding=11 }
+     U12     CMD_ECHO_0                      {offset={-2 0}  }                                                                           /**<-- Command Echo 0, 9 CMD words from last 1553 received cmd to the MCE RT, valid and invalid cmds are echoed */
+  U12     WORD_18                            {lengthInBits=16}                                                                           /**<-- Contents of the entire 16 bit WORD 18 */
+     U12     CMD_ECHO_1                      {offset={-2 0}  }                                                                           /**<-- Command Echo 1, 9 CMD words from last 1553 received cmd to the MCE RT, valid and invalid cmds are echoed */
+  U12     WORD_19                            {lengthInBits=16}                                                                           /**<-- Contents of the entire 16 bit WORD 19 */
+     U12     CMD_ECHO_2                      {offset={-2 0}  }                                                                           /**<-- Command Echo 2, 9 CMD words from last 1553 received cmd to the MCE RT, valid and invalid cmds are echoed */
+  U12     WORD_20                            {lengthInBits=16}                                                                           /**<-- Contents of the entire 16 bit WORD 20 */
+     U12     CMD_ECHO_3                      {offset={-2 0}  }                                                                           /**<-- Command Echo 3, 9 CMD words from last 1553 received cmd to the MCE RT, valid and invalid cmds are echoed */
+  U12     WORD_21                            {lengthInBits=16}                                                                           /**<-- Contents of the entire 16 bit WORD 21 */
+     U12     CMD_ECHO_4                      {offset={-2 0}  }                                                                           /**<-- Command Echo 4, 9 CMD words from last 1553 received cmd to the MCE RT, valid and invalid cmds are echoed */
+  U12     WORD_22                            {lengthInBits=16}                                                                           /**<-- Contents of the entire 16 bit WORD 22 */
+     U12     CMD_ECHO_5                      {offset={-2 0}  }                                                                           /**<-- Command Echo 5, 9 CMD words from last 1553 received cmd to the MCE RT, valid and invalid cmds are echoed */
+  U12     WORD_23                            {lengthInBits=16}                                                                           /**<-- Contents of the entire 16 bit WORD 23 */
+     U12     CMD_ECHO_6                      {offset={-2 0}  }                                                                           /**<-- Command Echo 6, 9 CMD words from last 1553 received cmd to the MCE RT, valid and invalid cmds are echoed */
+  U12     WORD_24                            {lengthInBits=16}                                                                           /**<-- Contents of the entire 16 bit WORD 24 */
+     U12     CMD_ECHO_7                      {offset={-2 0}  }                                                                           /**<-- Command Echo 7, 9 CMD words from last 1553 received cmd to the MCE RT, valid and invalid cmds are echoed */
+  U12     WORD_25                            {lengthInBits=16}                                                                           /**<-- Contents of the entire 16 bit WORD 25 */
+     U12     CMD_ECHO_8                      {offset={-2 0}  }                                                                           /**<-- Command Echo 8, 9 CMD words from last 1553 received cmd to the MCE RT, valid and invalid cmds are echoed */
+  U12     WORD_26                            {lengthInBits=16}                                                                           /**<-- Contents of the entire 16 bit WORD 26 */
+     U1     CMDS_NUMBER_SINCE_START          {offset={-2 0}  }                                                                           /**<-- Number of i cmds received by MCE, x'0000' - x'FFFF', can be cmd type or invalid parameter, or cmd when mtr not initialized */
+     U1     CMDS_VLD_SINCE_START             {}                                                                                          /**<-- Number of valid cmds received by MCE, x'0000' - x'FFFF' */
+  U12     WORD_27                            {lengthInBits=16}                                                                           /**<-- Contents of the entire 16 bit WORD 27 */
+     U12     W27_RSVD                        {offset={-2 0}, lengthInBits =2 }                                                           /**<-- Reserved bits 15-14 */
+     U12     TILT_SADA_CURRENT_AF            {lengthInBits=1, conversion=pace_tsade_error_dsc, limit=limErrFlag}                         /**<-- TILT & SADA Current action flag, if true, disables H-Bridge  */
+     U12     TILT_SADA_CURRENT_AE            {lengthInBits=1, conversion=pace_tsade_enadis_dsc}                                          /**<-- TILT & SADA Current action enable, responds to error */
+     U12     WD_WRITE_AF                     {lengthInBits=1, conversion=pace_tsade_enadis_dsc}                                          /**<-- Watch Dog Write Action Flag */
+     U12     WD_READ_AF                      {lengthInBits=1, conversion=pace_tsade_enadis_dsc}                                          /**<-- Watch Dog Read Action Flag */
+     U12     WD_WRITE_EF                     {lengthInBits=1, conversion=pace_tsade_error_dsc, limit=limErrFlag}                         /**<-- Watch Dog Write Error Flag */
+     U12     WD_READ_EF                      {lengthInBits=1, conversion=pace_tsade_error_dsc, limit=limErrFlag}                         /**<-- Watch Dog Read Error Flag */
+     U12     SADA_EOT_PGM_POS_EF             {lengthInBits=1, conversion=pace_tsade_eot_dsc, limit=limErrFlag}                           /**<-- SADA EOT Programable Postive Error Flag */
+     U12     SADA_EOT_PGM_NEG_EF             {lengthInBits=1, conversion=pace_tsade_eot_dsc, limit=limErrFlag}                           /**<-- SADA EOT Programable Negative Error Flag */
+     U12     TILT_EOT_PGM_POS_EF             {lengthInBits=1, conversion=pace_tsade_eot_dsc}                                             /**<-- TILT EOT Programable Postive Error Flag */
+     U12     TILT_EOT_PGM_NEG_EF             {lengthInBits=1, conversion=pace_tsade_eot_dsc}                                             /**<-- TILT EOT Programable Negative Error Flag */
+     U12     TILT_ERR_FLG                    {lengthInBits=2, conversion=pace_tsade_errflag_dsc, limit=limErrFlag}                       /**<-- Motor 1 (TILT) error flag, 00 = no error, 01 = No home detected, 10 = No right position  */
+     U12     W27_RSVD2                       {lengthInBits=1}                                                                            /**<-- Motor 1 (TILT) time contorl, 1 = time cntrl enabled, 0 = time cntrl disabled  */
+     U12     TILT_DIR                        {lengthInBits=1, conversion=pace_tsade_curdir_dsc}                                          /**<-- Motor 1 (TILT) direction, 1 = CW, 0 = CCW */
+  U12     WORD_28                            {lengthInBits=16}                                                                           /**<-- Contents of the entire 16 bit WORD 28 */
+     U12     ERR_CTR_NO_HOME_WHEN_TILT       {offset={-2 0}, lengthInBits=4, deltaLimit=1}                                               /**<-- Error Counter no home detected when tilt */
+     U12     ERR_CTR_NIT_NOT_INIT_POS_WHTILT {lengthInBits=4, deltaLimit=1}                                                              /**<-- Error Counter not init position when tilt */
+     U12     NUM_OF_TILT_FSM_CMDS_DECODED    {lengthInBits=8}                                                                            /**<-- Number of TILT FSM Commands Decoded */
+  U12     WORD_29                            {lengthInBits=16}                                                                           /**<-- Contents of the entire 16 bit WORD 29 */
+     U12     ABS_TILT_DELTA_ERR_POS          {offset={-2 0}, lengthInBits=8, limit=limTiltErrPos}                                        /**<-- Motor 1 (TILT) absolute delta error position */
+     U12     ABS_SADA_DELTA_ERR_POS          {lengthInBits =8, limit=limSadaErrPos}                                                      /**<-- Motor 0 (SADA) absolute delta error position */
+  U12     WORD_30                            {lengthInBits=16}                                                                           /**<-- Contents of the entire 16 bit WORD 30 */
+     U12     SADA_POS_ED_EF                  {offset={-2 0}, lengthInBits=1, conversion=pace_tsade_error_dsc, limit=limErrFlag}          /**<-- SADA ED Error */
+     U12     SADA_POS_ED_ENA                 {lengthInBits=1, conversion=pace_tsade_enadis_dsc }
+     U12     TILT_SADA_CUR_EF                {lengthInBits=1, conversion=pace_tsade_error_dsc, limit=limErrFlag}
+     U12     TILT_EOT_LED_NEG_EF             {lengthInBits=1, conversion=pace_tsade_eot_dsc}
+     U12     TILT_EOT_LED_POS_EF             {lengthInBits=1, conversion=pace_tsade_eot_dsc}
+     U12     SADA_EOT_LED_NEG_EF             {lengthInBits=1, conversion=pace_tsade_eot_dsc, limit=limErrFlag}
+     U12     SADA_EOT_LED_POS_EF             {lengthInBits=1, conversion=pace_tsade_eot_dsc, limit=limErrFlag}
+     U12     TILT_EOT_ENC_NEG_ENA            {lengthInBits=1, conversion=pace_tsade_enadis_dsc}
+     U12     TILT_EOT_ENC_POS_ENA            {lengthInBits=1, conversion=pace_tsade_enadis_dsc}
+     U12     SADA_EOT_ENC_NEG_ENA            {lengthInBits=1, conversion=pace_tsade_enadis_dsc}
+     U12     SADA_EOT_ENC_POS_ENA            {lengthInBits=1, conversion=pace_tsade_enadis_dsc}
+     U12     TILT_DELTA_ERF                  {lengthInBits=1, conversion=pace_tsade_error_dsc, limit=limErrFlag}
+     U12     TILT_TOTAL_TRAVEL_EF            {lengthInBits=1, conversion=pace_tsade_error_dsc, limit=limErrFlag}
+     U12     TILT_CRUISE_EF                  {lengthInBits=1, conversion=pace_tsade_error_dsc, limit=limErrFlag}
+     U12     TILT_RAMP_DWN_EF                {lengthInBits=1, conversion=pace_tsade_error_dsc, limit=limErrFlag}
+     U12     TILT_RAMP_UP_EF                 {lengthInBits=1, conversion=pace_tsade_error_dsc, limit=limErrFlag}
+  U12     WORD_31                            {lengthInBits=16}                                                                           /**<-- Contents of the entire 16 bit WORD 31 */
+     U12    SADA_POS_ED_AE                   {offset={-2 0}, lengthInBits=1, conversion=pace_tsade_enadis_dsc}
+     U12    TILT_SADA_CUR_ENA                {lengthInBits=1, conversion=pace_tsade_enadis_dsc}
+     U12    TILT_DELTA_AE                    {lengthInBits=1, conversion=pace_tsade_enadis_dsc}                                          /**<-- Motor 1 (TILT) Delta Action Enable */
+     U12    TILT_TOTAL_TIME_AE               {lengthInBits=1, conversion=pace_tsade_enadis_dsc}                                          /**<-- Motor 1 (TILT) Total Time Action Enable */
+     U12    TILT_CRUISE_AE                   {lengthInBits=1, conversion=pace_tsade_enadis_dsc}                                          /**<-- Motor 1 (TILT) Crusie Action Enable */
+     U12    TILT_RAMPDOWN_AE                 {lengthInBits=1, conversion=pace_tsade_enadis_dsc}                                          /**<-- Motor 1 (TILT) Ramp Down Action Enable */
+     U12    TILT_RAMPUP_AE                   {lengthInBits=1, conversion=pace_tsade_enadis_dsc}                                          /**<-- Motor 1 (TILT) Ramp Up Action Enable */
+     U12    TILT_DELTA_ENA                   {lengthInBits=1, conversion=pace_tsade_enadis_dsc}
+     U12    TILT_TOT_TIME_ENA                {lengthInBits=1, conversion=pace_tsade_enadis_dsc}
+     U12    TILT_CRUISE_ENA                  {lengthInBits=1, conversion=pace_tsade_enadis_dsc}
+     U12    TILT_RAMPDOWN_ENA                {lengthInBits=1, conversion=pace_tsade_enadis_dsc}
+     U12    TILT_RAMPUP_ENA                  {lengthInBits=1, conversion=pace_tsade_enadis_dsc}
+     U12    WD_W_ERR_ENA                     {lengthInBits=1, conversion=pace_tsade_enadis_dsc}                                          /**<-- Enables TSADE Error Detection for write communication to 1553 Bus */
+     U12    WD_R_ERR_ENA                     {lengthInBits=1, conversion=pace_tsade_enadis_dsc}                                          /**<-- Enables TSADE Error Detection for read communication to 1553 Bus */
+     U12    WD_W_ACTION_ENA                  {lengthInBits=1, conversion=pace_tsade_enadis_dsc}                                          /**<-- Enables TSADE Action if the WD Write Error Detection is triggered */
+     U12    WD_R_ACTION_ENA                  {lengthInBits=1, conversion=pace_tsade_enadis_dsc}                                          /**<-- Enables TSADE Action if the WD Read Error Detection is triggered */
+ }
+
+/* END of Sub address 1 */
+/* End of TSADE_DIG */
+
+/*
+==============================================================================
+== APID 199 (0x0C7):  ANLG  Analog Telem                                   ==
+==============================================================================
+*/
+
+prototype  CfsTelemetryPacket TSADE_ANLG {
+    timeout="3"
+    applyWhen={ FieldInRange{field=applicationId, range=199 } }
+    XferStatHdr1553 XfrHdr1553   {}                                                                                        /**<-- 4 bytes of 1553 Header that follows CCSDS header and Secondary Header (time)*/
+  /* Begin Sub address 2 */
+  U12  WORD_00                    {lengthInBits=16}
+    U12  M15V                       {offset={-2 0},conversion=tsade_ana_M15V_poly, limit=tsade_ana_M15V_lim, units="V"}                     /**<-- ANALOG WORD 00, negative 15 V Analog */
+  U12  WORD_01                    {lengthInBits=16}
+    U12  P30V                       {offset={-2 0},conversion=tsade_ana_P30V_poly, limit=tsade_ana_P30V_lim, units="V"}                     /**<-- ANALOG WORD 01, positive 30 V Analog */
+  U12  WORD_02                    {lengthInBits=16}
+    U12  P15V                       {offset={-2 0},conversion=tsade_ana_P15V_poly, limit=tsade_ana_P15V_lim, units="V"}                     /**<-- ANALOG WORD 02, positive 15 V Analog */
+  U12  WORD_03                    {lengthInBits=16}
+    U12  P5V                        {offset={-2 0},conversion=tsade_ana_P5V_poly, limit=tsade_ana_P5V_lim, units="V"}                       /**<-- ANALOG WORD 03, positive 5V Analog */
+  U12  WORD_04                    {lengthInBits=16}
+    U12  P3P3V                      {offset={-2 0},conversion=tsade_ana_P3P3V_poly, limit=tsade_ana_P3P3V_lim, units="V"}                   /**<-- ANALOG WORD 04, positive 3.3V Analog */
+  U12  WORD_05                    {lengthInBits=16}
+    U12  P1P5V                      {offset={-2 0},conversion=tsade_ana_P1P5V_poly, limit=tsade_ana_P1P5V_lim, units="V"}                   /**<-- ANALOG WORD 05, positive 1.5V Analog */
+  U12  WORD_06                    {lengthInBits=16}
+    U12  SADA_HEMI                  {offset={-2 0},conversion=tsade_ana_SADA_HEMI_poly, limit=tsade_ana_SADA_HEMI_lim}                      /**<-- ANALOG WORD 06, SADA Hemi encoder track */
+  U12  WORD_07                    {lengthInBits=16}
+    U12  TILT_HEMI                  {offset={-2 0},conversion=tsade_ana_TILT_HEMI_poly, limit=tsade_ana_TILT_HEMI_lim}                      /**<-- ANALOG WORD 07, TILT Hemi encoder track */
+  U12  WORD_08                    {lengthInBits=16}
+    U12  SADA_MTR_T                 {offset={-2 0},conversion=tsade_ana_SADA_MtrTemp_poly, limit=tsade_ana_SADA_MtrTemp_lim, units="C"}     /**<-- ANALOG WORD 08, Motor 1 (SADA) drive temperature */
+  U12  WORD_09                    {lengthInBits=16}
+    U12  P3P3_REG_T                 {offset={-2 0},conversion=tsade_ana_3P3Reg_poly, limit=tsade_ana_3P3Reg_lim, units="C"}                 /**<-- ANALOG WORD 09, 3.3V regulator */
+  U12  WORD_10                    {lengthInBits=16}
+    U12  FPGA_T                     {offset={-2 0},conversion=tsade_ana_FPGA_Temp_poly, limit=tsade_ana_FPGA_Temp_lim, units="C"}           /**<-- ANALOG WORD 10, FPGA temp */
+  U12  WORD_11                    {lengthInBits=16}
+    U12  DC_DC_T                    {offset={-2 0},conversion=tsade_ana_DC_DC_Temp_poly, limit=tsade_ana_DC_DC_Temp_lim, units="C"}         /**<-- ANALOG WORD 11, DC DC converter temp */
+  U12  WORD_12                    {lengthInBits=16}
+    U12  TILT_I                     {offset={-2 0},conversion=tsade_ana_TILT_I_poly, limit=tsade_ana_TILT_I_lim, units="mA"}                /**<-- ANALOG WORD 12, TILT drive current */
+  U12  WORD_13                    {lengthInBits=16}
+    U12  SADA_I                     {offset={-2 0},conversion=tsade_ana_SADA_I_poly, limit=tsade_ana_SADA_I_lim, units="mA"}                /**<-- ANALOG WORD 13, SADA drive current */
+  U12  WORD_14                    {lengthInBits=16}
+    U12  SADA_LED_I                 {offset={-2 0},conversion=tsade_ana_SADA_LEDI_poly, limit=tsade_ana_SADA_LEDI_lim, units="mA"}          /**<-- ANALOG WORD 14, SADA LED current */
+  U12  WORD_15                    {lengthInBits=16}
+    U12  TILT_LED_I                 {offset={-2 0},conversion=tsade_ana_TILT_LEDI_poly, limit=tsade_ana_TILT_LEDI_lim, units="mA"}          /**<-- ANALOG WORD 15, TILT LED current */
+
+/* removing from DB, Ken Lee Says we don't get these anymore 10_28_21
+  U12  WORD_16                    {lengthInBits=16}
+     U12  RSVD_16                 {offset={-2 0},lengthInBits=7}
+     U12  SADA_SMOOTH_ENA         {lengthInBits=1, conversion=pace_tsade_enadis_dsc}
+     U12  SADA_MICROPWR_ENA       {lengthInBits=1, conversion=pace_tsade_enadis_dsc}
+     U12  SADA_MICROPWR_INDEX     {lengthInBits=7}
+  U12  WORD_17                    {lengthInBits=16}
+     U12  RSVD_17                 {offset={-2 0},lengthInBits=7}
+     U12  TILT_SMOOTH_ENA         {lengthInBits=1, conversion=pace_tsade_enadis_dsc}
+     U12  TILT_MICROPWR_ENA       {lengthInBits=1, conversion=pace_tsade_enadis_dsc}
+     U12  TILT_MICROPWR_INDEX     {lengthInBits=7}
+  U12  WORD_18                    {}
+  U12  WORD_19                    {}
+  U12  WORD_20                    {}
+  U12  WORD_21                    {}
+  U12  WORD_22                    {}
+  U12  WORD_23                    {}
+  U12  WORD_24                    {}
+  U12  WORD_25                    {}
+  U12  WORD_26                    {}
+  U12  WORD_27                    {}
+  U12  WORD_28                    {}
+  U12  WORD_29                    {}
+  U12  WORD_30                    {}
+  U12  WORD_31                    {}
+  end of removal section */
+
+} 
+/* End of TSADE_ANLG */
+/* End of Sub address 2 */
+
+
+/*
+==============================================================================
+== APID 465 (0x1D1):  FSM   TILT Finite State Machine data (FSM)            ==
+==============================================================================
+*/
+
+prototype CfsTelemetryPacket TSADE_FSM 
+{
+      timeout="0"
+      applyWhen={ FieldInRange{field=applicationId, range=465 } }
+      XferStatHdr1553 XfrHdr1553                 {}                                                                         /**<-- 4 bytes of 1553 Header that follows CCSDS header and Secondary Header (time)*/
+   /* Begin Sub address 3 */
+      U12      WORD_00                             {lengthInBits=16}                                                           /**<-- Contents of the entire 16 bit WORD 00 */
+         U12     TILT_TRACK                        {offset={-2 0}, lengthInBits=1, conversion=pace_tsade_tilt_track_dsc}       /**<-- TILT special location, 00 = Not Special Loc, 01 = Home, 10 = NEG (CW) EOT, 11 = POS (CCW) EOT */
+         U12     TILT_TIME_OFF                     {lengthInBits=1, conversion=pace_tsade_tilt_time_dsc}
+         U12     RSVD_00                           {lengthInBits=10}
+         U12     TILT_ERR_VECTOR                   {lengthInBits=2, conversion=pace_tsade_tilterrorvector}
+         U12     TILT_DIR_CTRL_ENA                 {lengthInBits=1, conversion=pace_tsade_enadis_dsc}
+         U12     TILT_MANDIR                       {lengthInBits=1, conversion=pace_tsade_curdir_dsc}
+      U12     POS                                  {}                                                                          /**<-- WORD 01 */
+      U12     CNTR                                 {}                                                                          /**<-- WORD 02 */
+      U12     RSVD_03                              {}                                                                          /**<-- WORD 03 */
+      U12     MOTOR_POS                            {}                                                                          /**<-- WORD 04 */
+      U12     RSVD_05                              {}                                                                          /**<-- WORD 05 */
+      U12     CMD_QUE_0                            {}                                                                          /**<-- WORD 06 */
+      U12     CMD_QUE_1                            {}                                                                          /**<-- WORD 07 */
+      U12     CMD_QUE_2                            {}                                                                          /**<-- WORD 08 */
+      U12     CMD_QUE_3                            {}                                                                          /**<-- WORD 09 */
+      U12     CMD_QUE_4                            {}                                                                          /**<-- WORD 10 */
+      U12     CMD_QUE_5                            {}                                                                          /**<-- WORD 11 */
+      U12     CMD_QUE_6                            {}                                                                          /**<-- WORD 12 */
+      U12     CMD_QUE_7                            {}                                                                          /**<-- WORD 13 */
+      U12     TILT_TIME_MSB                        {defaultValue = 0}                                                          /**<-- WORD 14 */
+      U12     TILT_TIME_LSB                        {defaultValue = 0}                                                          /**<-- WORD 15 */
+      U12     RSVD_16                              {}                                                                          /**<-- WORD 16 */
+      U12     RSVD_17                              {}                                                                          /**<-- WORD 17 */
+      U12     RSVD_18                              {}                                                                          /**<-- WORD 18 */
+      U12     RSVD_19                              {}                                                                          /**<-- WORD 19 */
+      U12     RSVD_20                              {}                                                                          /**<-- WORD 20 */
+      U12     RSVD_21                              {}                                                                          /**<-- WORD 21 */
+      U12     RSVD_22                              {}                                                                          /**<-- WORD 22 */
+      U12     RSVD_23                              {}                                                                          /**<-- WORD 23 */
+      U12     RSVD_24                              {}                                                                          /**<-- WORD 24 */
+      U12     WORD_25                              {}                                                                          /**<-- WORD 25 */
+         U12     RSVD_25                           {offset={-2 0}, lengthInBits=8}
+         U12     LAST_DELTA_LATCHED                {lengthInBits=8}
+      U12     ENCODER_POSTION_REVERSE_POS          {lengthInBits=16}                                                           /**<-- WORD 26 */
+      U12     ENCODER_POSTION_REVERSE_NEG          {lengthInBits=16}                                                           /**<-- WORD 27 */
+      U12     ENCODER_NOT_ERROR                    {lengthInBits=16}                                                           /**<-- WORD 28 */
+      U12     MOTOR_POSITION_LATCHED_DE_TRIG       {lengthInBits=16}                                                           /**<-- WORD 29 */
+      U12     ENCODER_POSITION_LATCHED_DE_TRIG     {lengthInBits=16}                                                           /**<-- WORD 30 */
+      U12     WORD_31                              {lengthInBits=16}                                                           /**<-- WORD 31 */
+         U12     REAL_TIME_ENC_POS_LSB             {offset={-2 0}, lengthInBits=4}
+         U12     REAL_TIME_MTR_POS_LSB             {lengthInBits=4}
+         U12     RSVD_31                           {lengthInBits=8}
+}
+
+/* End of TSAD_FSM */
+/* End of Sub address 3 */
+
+/*
+==============================================================================
+== 466 (0x1D2):  DBUG  Register data dump                                   ==
+==============================================================================
+*/
+   prototype CfsTelemetryPacket TSADE_DBUG 
+   {
+         timeout="0"
+         applyWhen={ FieldInRange{field=applicationId, range=466 } }
+         XferStatHdr1553 XfrHdr1553    {}     /* 4 bytes of 1553 Header that follows CCSDS header and Secondary Header (time)*/
+      /* Begin Sub address 4 */
+         U12     REG_0         {initialValue=0}     /**<-- Echo Register Selected to be read     */
+         U12     REG_1         {initialValue=0}     /**<-- Echo Register Selected to be read +1  */
+         U12     REG_2         {initialValue=0}     /**<-- Echo Register Selected to be read +2  */
+         U12     REG_3         {initialValue=0}     /**<-- Echo Register Selected to be read +3  */
+         U12     REG_4         {initialValue=0}     /**<-- Echo Register Selected to be read +4  */
+         U12     REG_5         {initialValue=0}     /**<-- Echo Register Selected to be read +5  */
+         U12     REG_6         {initialValue=0}     /**<-- Echo Register Selected to be read +6  */
+         U12     REG_7         {initialValue=0}     /**<-- Echo Register Selected to be read +7  */
+         U12     REG_8         {initialValue=0}     /**<-- Echo Register Selected to be read +8  */
+         U12     REG_9         {initialValue=0}     /**<-- Echo Register Selected to be read +9  */
+         U12     REG_10        {initialValue=0}     /**<-- Echo Register Selected to be read +10 */
+         U12     REG_11        {initialValue=0}     /**<-- Echo Register Selected to be read +11 */
+         U12     REG_12        {initialValue=0}     /**<-- Echo Register Selected to be read +12 */
+         U12     REG_13        {initialValue=0}     /**<-- Echo Register Selected to be read +13 */
+         U12     REG_14        {initialValue=0}     /**<-- Echo Register Selected to be read +14 */
+         U12     REG_15        {initialValue=0}     /**<-- Echo Register Selected to be read +15 */
+         U12     REG_16        {initialValue=0}     /**<-- Echo Register Selected to be read +16 */
+         U12     REG_17        {initialValue=0}     /**<-- Echo Register Selected to be read +17 */
+         U12     REG_18        {initialValue=0}     /**<-- Echo Register Selected to be read +18 */
+         U12     REG_19        {initialValue=0}     /**<-- Echo Register Selected to be read +19 */
+         U12     REG_20        {initialValue=0}     /**<-- Echo Register Selected to be read +20 */
+         U12     REG_21        {initialValue=0}     /**<-- Echo Register Selected to be read +21 */
+         U12     REG_22        {initialValue=0}     /**<-- Echo Register Selected to be read +22 */
+         U12     REG_23        {initialValue=0}     /**<-- Echo Register Selected to be read +23 */
+         U12     REG_24        {initialValue=0}     /**<-- Echo Register Selected to be read +24 */
+         U12     REG_25        {initialValue=0}     /**<-- Echo Register Selected to be read +25 */
+         U12     REG_26        {initialValue=0}     /**<-- Echo Register Selected to be read +26 */
+         U12     REG_27        {initialValue=0}     /**<-- Echo Register Selected to be read +27 */
+         U12     REG_28        {initialValue=0}     /**<-- Echo Register Selected to be read +28 */
+         U12     REG_29        {initialValue=0}     /**<-- Echo Register Selected to be read +29 */
+         U12     REG_30        {initialValue=0}     /**<-- Echo Register Selected to be read +30 */
+         U12     REG_31        {initialValue=0}     /**<-- Echo Register Selected to be read +31 */
+   }
+
+/* End of TSADE_DBUG */
+/* End of Sub address 4 */
+
+/* ------------------------------------- CONVERSIONS -------------------------------------- */
+
+
+DiscreteConversion pace_tsade_cmd_type{
+   Dsc TSADE_STOP       { range=1..1 displayString="STOP"                 bgColor = black  fgColor = green }
+   Dsc TSADE_OFF        { range=27..27 displayString="OFF"                bgColor = black  fgColor = green }
+   Dsc TSADE_GOSTEPS    { range=2..2 displayString="GOSTEPS"              bgColor = black  fgColor = green }
+   Dsc TSADE_GOPOS      { range=3..3 displayString="GOPOS"                bgColor = black  fgColor = green }
+   Dsc TSADE_MOVE       { range=4..4 displayString="MOVE"                 bgColor = black  fgColor = green }
+   Dsc TSADE_UPDATERATE { range=8..8 displayString="UPDATERATE"           bgColor = black  fgColor = green }
+   Dsc TSADE_SETPOS     { range=14..14 displayString="SETPOS"             bgColor = black  fgColor = green }
+   Dsc TSADE_GOHOME     { range=7..7 displayString="GOHOME"               bgColor = black  fgColor = green }
+   Dsc TSADE_HBRIDGE    { range=18..18 displayString="HBRIDGE"            bgColor = black  fgColor = green }
+   Dsc TSADE_RELAY      { range=28..28 displayString="RELAY"              bgColor = black  fgColor = green }
+   Dsc TSADE_EOT        { range=21..21 displayString="EOT"                bgColor = black  fgColor = green }
+   Dsc TSADE_LEDI       { range=19..19 displayString="LEDI"               bgColor = black  fgColor = green }
+   Dsc TSADE_PHOLDTIME  { range=11..11 displayString="PHOLDTIME"          bgColor = black  fgColor = green }
+   Dsc TSADE_PROFILE    { range=22..22 displayString="PROFILE"            bgColor = black  fgColor = green }
+   Dsc TSADE_UPDATEREG  { range=21..21 displayString="UPDATEREG"          bgColor = black  fgColor = green }
+   Dsc TSADE_TILT       { range=24..24 displayString="TILT"               bgColor = black  fgColor = green }
+   Dsc TSADE_NOOP       { range=0..0 displayString="NOOP"                 bgColor = black  fgColor = green }
+   Dsc TSADE_HEMI       { range=5..5 displayString="HEMI"                 bgColor = black  fgColor = green }
+   Dsc TSADE_RESETCNTRS { range=25..25 displayString="RESETCNTRS"         bgColor = black  fgColor = green }
+   Dsc TSADE_DUMPREG    { range=16..16 displayString="DUMPREG"            bgColor = black  fgColor = green }
+   Dsc TSADE_TILT_ERRDET{ range=10..10 displayString="TILT_ERRDET"        bgColor = black  fgColor = green }
+   Dsc TSADE_1553ERDET  { range=12..12 displayString="1553ERDET"          bgColor = black  fgColor = green }
+   Dsc TSADE_CLEARERR   { range=26..26 displayString="CLEARERR"           bgColor = black  fgColor = green }
+   Dsc TSADE_INITTILT   { range=30..30 displayString="INITTILT"           bgColor = black  fgColor = green }
+   Dsc TSADE_ENCDISCLVL { range=29..29 displayString="ENCDISCLVL"         bgColor = black  fgColor = green }
+   Dsc TSADE_CURENTLIMIT{ range=15..15 displayString="CURENTLIMIT"        bgColor = black  fgColor = green }
+   Dsc TSADE_SADAPOSERR { range=6..6 displayString="SADAPOSERR"           bgColor = black  fgColor = green }
+}
+DiscreteConversion pace_tsade_mce_rev_dsc{
+   Dsc UNKNOWN     { range=0..1 displayString="Unkwn"                     bgColor = black  fgColor = green }
+   Dsc REDUNDANT   { range=2..2 displayString="Red-B"                     bgColor = black  fgColor = green }
+   Dsc PRIMARY     { range=3..3 displayString="Pri-A"                     bgColor = black  fgColor = green }
+}
+DiscreteConversion  pace_tsade_specialLoc_dsc{
+   Dsc NOSPECLOC   { range=0..0 displayString="NO"                       bgColor = black  fgColor = green}
+   Dsc ATHOME      { range=1..1 displayString="AT_HOME"                  bgColor = black  fgColor = green}
+   Dsc NEGEOT      { range=2..2 displayString="NEG_EOT"                  bgColor = black  fgColor = green}
+   Dsc POSEOT      { range=3..3 displayString="POS_EOT"                  bgColor = black  fgColor = green}
+}
+DiscreteConversion  pace_tsade_relaystatus_dsc{
+   Dsc RELAYOPEN   { range=0..0 displayString="OPEN"                     bgColor = black  fgColor = green}
+   Dsc RELAYCLOSED { range=1..1 displayString="CLOSED"                   bgColor = black  fgColor = green}
+}
+DiscreteConversion  pace_tsade_stepprofile_dsc{
+   Dsc CARDINAL    { range=0..0 displayString="CARD"                     bgColor = black  fgColor = green}
+   Dsc SMOOTH      { range=1..1 displayString="SMOOTH"                   bgColor = black  fgColor = green}
+   Dsc SINE        { range=1..1 displayString="SINE"                     bgColor = black  fgColor = green}
+}
+DiscreteConversion     pace_tsade_curdir_dsc{
+   Dsc NEG          {range=0..0 displayString="NEG"                      bgColor = black  fgColor = green}
+   Dsc POS          {range=1..1 displayString="POS"                      bgColor = black  fgColor = green}
+}
+DiscreteConversion     pace_tsade_comstate_dsc{
+   Dsc STATE1       {range=1..1 displayString="ST_1"                     bgColor = black  fgColor = green}
+   Dsc STATE2       {range=2..2 displayString="ST_2"                     bgColor = black  fgColor = green}
+   Dsc STATE3       {range=3..3 displayString="ST_3"                     bgColor = black  fgColor = green}
+   Dsc STATE4       {range=4..4 displayString="ST_4"                     bgColor = black  fgColor = green}
+   Dsc STATE5       {range=5..5 displayString="ST_5"                     bgColor = black  fgColor = green}
+   Dsc STATE6       {range=6..6 displayString="ST_6"                     bgColor = black  fgColor = green}
+}
+DiscreteConversion  pace_tsade_sht_dsc{
+     Dsc PWR_ON      {range=0..0 displayString="PWR_OFF"                   bgColor = black  fgColor = green}
+     Dsc PWR_OFF     {range=1..1 displayString="PWR_ON"                    bgColor = black  fgColor = green}
+}
+DiscreteConversion  pace_tsade_enadis_dsc{
+   Dsc DISABLED    {range=0..0 displayString="DIS"                       bgColor = black  fgColor = green}
+   Dsc ENABLED     {range=1..1 displayString="ENA"                       bgColor = black  fgColor = green}
+}
+DiscreteConversion  pace_tsade_pwrlvl_dsc{
+   Dsc FORTY       { range=0..0 displayString="40%"                      bgColor = black  fgColor = green}
+   Dsc SIXTYFIVE   { range=1..1 displayString="60%"                      bgColor = black  fgColor = green}
+   Dsc EIGHTY      { range=2..2 displayString="80%"                      bgColor = black  fgColor = green}
+   Dsc HUNDRED     { range=3..3 displayString="100%"                     bgColor = black  fgColor = green}
+}
+DiscreteConversion  pace_tsade_homeinit_dsc{
+   Dsc NOT_INITIALIZED   {range=0..0 displayString="NOT_INIT"            bgColor = black  fgColor = green}
+   Dsc INITIALIZED       {range=1..1 displayString="INITLZD"             bgColor = black  fgColor = green}
+}
+DiscreteConversion tsade_processed_hemi_dsc{
+   Dsc POS     { range=1..1 displayString="Positive"                bgColor = black  fgColor = green }
+   Dsc NEG     { range=0..0 displayString="Negative"                bgColor = black  fgColor = green }
+}
+DiscreteConversion tsade_hemi_dsc{
+   Dsc REGULAR     { range=0..0 displayString="NORMAL"              bgColor = black  fgColor = green }
+   Dsc INVERTED    { range=1..1 displayString="INVERTED"            bgColor = black  fgColor = green }
+}
+DiscreteConversion  pace_tsade_error_dsc{
+   Dsc NO_ERROR    {range=0..0 displayString="NO_ERR"                bgColor = black  fgColor = green}
+   Dsc ERROR       {range=1..1 displayString="ERR"                   bgColor = black  fgColor = green}
+}
+DiscreteConversion  pace_tsade_ledi_dsc{
+   Dsc TWELVE      {range=0..0 displayString="12mA"                  bgColor = black  fgColor = green}
+   Dsc SIXTEEN     {range=1..1 displayString="16mA"                  bgColor = black  fgColor = green}
+   Dsc TWENTY      {range=2..2 displayString="20mA"                  bgColor = black  fgColor = green}
+   Dsc TWENTYFOUR  {range=3..3 displayString="24mA"                  bgColor = black  fgColor = green}
+   Dsc OFF         {range=4..7 displayString="OFF"                   bgColor = black  fgColor = green}
+}
+DiscreteConversion  pace_tsade_errflag_dsc{
+   Dsc NOERR       {range=0..0 displayString="NO_ERR"                bgColor = black  fgColor = green}
+   Dsc NOHOMEDET   {range=1..1 displayString="NO_HOME_DET"           bgColor = black  fgColor = green}
+   Dsc NORIGHTPOS  {range=2..2 displayString="NO_RIGHT_POS"          bgColor = black  fgColor = green}
+}
+DiscreteConversion pace_tsade_eot_dsc{
+   Dsc OFF         {range=0..0 displayString="OFF"                      bgColor = black  fgColor = green}
+   Dsc On          {range=1..1 displayString="ON"                       bgColor = black  fgColor = green}
+}
+DiscreteConversion pace_tsade_eot_status{
+   Dsc ALLON   { range=0..0 displayString="BOTH_ON"                  bgColor = black  fgColor = green }
+   Dsc NEGON   { range=1..1 displayString="NEG_ON"                   bgColor = black  fgColor = green }
+   Dsc POSON   { range=2..2 displayString="POS_ON"                   bgColor = black  fgColor = green }
+   Dsc ALLOFF  { range=3..3 displayString="BOTH_OFF"                 bgColor = black  fgColor = green }
+}
+   /*
+   00 = Motor stops at CW and CCW soft stops
+   01 = Motor will stop at CW limit.  CCW stop is overridden
+   10 = CW limit is overridden.  Motor will stop at CCW stop
+   11 = Motor allowed to travel beyond both stops
+   */
+DiscreteConversion pace_tsade_tilterrorvector{
+   Dsc NOERR    { range=0..0 displayString="NO_ERR"                      bgColor = black  fgColor = green }
+   Dsc NOHO     { range=1..1 displayString="NO_HOME_DET"                 bgColor = black  fgColor = green }
+   Dsc PR       { range=2..2 displayString="POS_OUT_OF_RNG"              bgColor = black  fgColor = green }
+   Dsc UNK      { range=3..3 displayString="UNKWN"                       bgColor = black  fgColor = green }
+}
+DiscreteConversion pace_tsade_tilt_time_dsc{
+   Dsc NOTTO    { range=0..0 displayString="NOT_TIME_OFF"                bgColor = black  fgColor = green }
+   Dsc TIT      { range=1..1 displayString="Timer=Threshold"             bgColor = black  fgColor = green }
+}
+DiscreteConversion pace_tsade_tilt_track_dsc{
+   Dsc IDLE    { range=0..0 displayString="IDLE"                         bgColor = black  fgColor = green }
+   Dsc TILT    { range=1..1 displayString="TILT"                         bgColor = black  fgColor = green }
+}
+
+PolynomialConversion driveri_poly                  {coefficients={-5.0             , 0.2229}}
+PolynomialConversion pace_tsade_enc_sada           {coefficients={-245.22          , 0.0075}}
+PolynomialConversion pace_tsade_enc_tilt           {coefficients={-245.76          , 0.0075}}
+PolynomialConversion tsade_ana_M15V_poly           {coefficients={0.1205           ,-0.0061003516}}
+PolynomialConversion tsade_ana_P30V_poly           {coefficients={0.350            , 0.008002387}}
+PolynomialConversion tsade_ana_P15V_poly           {coefficients={-0.002           , 0.004266357}}
+PolynomialConversion tsade_ana_P5V_poly            {coefficients={ 0.004           , 0.001587648}}
+PolynomialConversion tsade_ana_P3P3V_poly          {coefficients={-0.018           , 0.001220703}}
+PolynomialConversion tsade_ana_P1P5V_poly          {coefficients={ 0               , 0.001220703}}
+PolynomialConversion tsade_ana_SADA_HEMI_poly      {coefficients={-0.50            , 0.0046801}}
+PolynomialConversion tsade_ana_TILT_HEMI_poly      {coefficients={-0.19            , 0.00455998 }}
+PolynomialConversion tsade_ana_SADA_MtrTemp_poly   {coefficients={-5.74015562e+001 , 1.71882280e-01, -2.77677158e-004,  2.83499395e-07,-1.65596507e-10 ,5.47768058e-014, -9.52907763e-018, 6.79210465e-022  }}
+PolynomialConversion tsade_ana_3P3Reg_poly         {coefficients={-5.74015562e+001 , 1.71882280e-01, -2.77677158e-004,  2.83499395e-07,-1.65596507e-10 ,5.47768058e-014, -9.52907763e-018, 6.79210465e-022  }}
+PolynomialConversion tsade_ana_FPGA_Temp_poly      {coefficients={-5.74015562e+001 , 1.71882280e-01, -2.77677158e-004,  2.83499395e-07,-1.65596507e-10 ,5.47768058e-014, -9.52907763e-018, 6.79210465e-022  }}
+PolynomialConversion tsade_ana_DC_DC_Temp_poly     {coefficients={-5.74015562e+001 , 1.71882280e-01, -2.77677158e-004,  2.83499395e-07,-1.65596507e-10 ,5.47768058e-014, -9.52907763e-018, 6.79210465e-022  }}
+PolynomialConversion tsade_ana_TILT_I_poly         {coefficients={-5               , 0.2229 }}
+PolynomialConversion tsade_ana_SADA_I_poly         {coefficients={-5.0             , 0.2229 }}
+PolynomialConversion tsade_ana_SADA_LEDI_poly      {coefficients={-0.08            , 0.0085185 }}
+PolynomialConversion tsade_ana_TILT_LEDI_poly      {coefficients={-0.14            , 0.0085185 }}
+
+/** ------------------------------------- LIMITS -------------------------------------- */
+Limit limEotoverride               {yellowHigh= 3}
+Limit sadalimpwrlvl                {yellowLow = 1}
+Limit tltlimpwrlvl                 {yellowLow = 0}
+Limit limErrFlag                   {yellowHigh= 1}
+Limit limTiltErrPos                {yellowHigh= 10, redHigh= 20}
+Limit limSadaErrPos                {yellowHigh= 10, redHigh= 20}
+
+Limit tsade_lim_loc                                {yellowHigh =2}
+
+LimitSet tsade_ana_M15V_lim         {contextMnemonic = tsade_pseudo_pwr_stat Limit limit1 { contextRange= 1 , redHigh =-13.5 , yellowHigh =-14.25 , yellowLow =-15.75 , redLow =-16.5  }}
+LimitSet tsade_ana_P30V_lim         {contextMnemonic = tsade_pseudo_pwr_stat Limit limit1 { contextRange= 1 , redHigh = 33.5 , yellowHigh = 32.5  , yellowLow = 27.5  , redLow = 26.5  }}
+LimitSet tsade_ana_P15V_lim         {contextMnemonic = tsade_pseudo_pwr_stat Limit limit1 { contextRange= 1 , redHigh = 16.5 , yellowHigh = 15.75 , yellowLow = 14.25 , redLow = 13.5  }}
+LimitSet tsade_ana_P5V_lim          {contextMnemonic = tsade_pseudo_pwr_stat Limit limit1 { contextRange= 1 , redHigh =  5.4 , yellowHigh =  5.2  , yellowLow =  4.8  , redLow =  4.6  }}
+LimitSet tsade_ana_P3P3V_lim        {contextMnemonic = tsade_pseudo_pwr_stat Limit limit1 { contextRange= 1 , redHigh =  3.5 , yellowHigh =  3.4  , yellowLow =  3.2  , redLow =  3.1  }}
+LimitSet tsade_ana_P1P5V_lim        {contextMnemonic = tsade_pseudo_pwr_stat Limit limit1 { contextRange= 1 , redHigh =  1.57, yellowHigh =  1.55 , yellowLow =  1.45 , redLow =  1.42 }}
+LimitSet tsade_ana_SADA_HEMI_lim    {contextMnemonic = tsade_pseudo_pwr_stat Limit limit1 { contextRange= 1 , redHigh = 16.0 , yellowHigh = 15.5  , yellowLow = -0.5  , redLow = -1.0  }}
+LimitSet tsade_ana_TILT_HEMI_lim    {contextMnemonic = tsade_pseudo_pwr_stat Limit limit1 { contextRange= 1 , redHigh = 16.0 , yellowHigh = 15.5  , yellowLow = -0.5  , redLow = -1.0  }}
+LimitSet tsade_ana_SADA_MtrTemp_lim {contextMnemonic = tsade_pseudo_pwr_stat Limit limit1 { contextRange= 1 , redHigh = 99.12, yellowHigh = 94.12 , yellowLow = -15.0 , redLow =-20.0  }}
+LimitSet tsade_ana_3P3Reg_lim       {contextMnemonic = tsade_pseudo_pwr_stat Limit limit1 { contextRange= 1 , redHigh = 100.9, yellowHigh = 95.9  , yellowLow = -15.0 , redLow =-20.0  }}
+LimitSet tsade_ana_FPGA_Temp_lim    {contextMnemonic = tsade_pseudo_pwr_stat Limit limit1 { contextRange= 1 , redHigh = 92.0 , yellowHigh = 87.0  , yellowLow = -15.0 , redLow =-20.0  }}
+LimitSet tsade_ana_DC_DC_Temp_lim   {contextMnemonic = tsade_pseudo_pwr_stat Limit limit1 { contextRange= 1 , redHigh = 86.6 , yellowHigh = 84.6  , yellowLow = -15.0 , redLow =-20.0  }}
+
+LimitSet tsade_ana_TILT_I_lim       {
+   contextMnemonic = tsade_pseudo_tilt_pwr_lvl /* LIMSETS=[(RL=-1, YL=0, YH=300, RH=350), (RL=-1, YL=0, YH=400, RH=450), (RL=-1,YL=0,YH=650,RH=700), (RL=-1, YL=0, YH=650, RH=700)] */
+   Limit limit1        { contextRange= 0..0 , redLow=-3  , yellowLow=-2   , yellowHigh=460 , redHigh=480   }/* 40%  (RL=-1, YL=0, YH=300, RH=350) */
+   Limit limit2        { contextRange= 1..1 , redLow=-3  , yellowLow=-2   , yellowHigh=481 , redHigh=500   }/* 60% (RL=-1, YL=0, YH=400, RH=450) */
+   Limit limit3        { contextRange= 2..2 , redLow=-3  , yellowLow=-2   , yellowHigh=650 , redHigh=700   }/* 80%  (RL=-1,YL=0,YH=650,RH=700) */
+   Limit limit4        { contextRange= 3..3 , redLow=-3  , yellowLow=-2   , yellowHigh=650 , redHigh=700   }/* 100%  (RL=-1, YL=0, YH=650, RH=700) */
+}
+LimitSet tsade_ana_SADA_I_lim 
+{
+   contextMnemonic = tsade_pseudo_sada_pwr_lvl /* LIMSETS=[(RL=-1, YL=0, YH=300, RH=350), (RL=-1, YL=0, YH=400, RH=450), (RL=-1,YL=0,YH=650,RH=700), (RL=-1, YL=0, YH=650, RH=700)] */
+   Limit limit1        { contextRange=0..0 , redLow=-3   , yellowLow=-2   , yellowHigh=300 , redHigh=350   }  /* 40%  (RL=-1, YL=0, YH=300, RH=350) */
+   Limit limit2        { contextRange=1..1 , redLow=-3   , yellowLow=-2   , yellowHigh=400 , redHigh=450   }  /* 60% (RL=-1, YL=0, YH=400, RH=450) */
+   Limit limit3        { contextRange=2..2 , redLow=-3   , yellowLow=-2   , yellowHigh=650 , redHigh=700   }  /* 80%  (RL=-1,YL=0,YH=650,RH=700) */
+   Limit limit4        { contextRange=3..3 , redLow=-3   , yellowLow=-2   , yellowHigh=650 , redHigh=700   }  /* 100%  (RL=-1, YL=0, YH=650, RH=700) */
+}
+LimitSet tsade_ana_SADA_LEDI_lim {
+   contextMnemonic = tsade_pseudo_sada_led_i_lvl
+   Limit limit1        { contextRange=0..0 , excursionCount=4 , redLow=10.2 , yellowLow=10.8 , yellowHigh=13.2 , redHigh=18.4 }  /* 12mA (RL=10.2,YL=10.8,YH=13.2,RH=13.8)*/
+   Limit limit2        { contextRange=1..1 , excursionCount=4 , redLow=13.6 , yellowLow=10.8 , yellowHigh=17.6 , redHigh=18.4 }  /* 16mA (RL=13.6,YL=14.4,YH=17.6,RH=18.4) */
+   Limit limit3        { contextRange=2..2 , excursionCount=4 , redLow=17   , yellowLow=18   , yellowHigh=22   , redHigh=23   }  /* 20mA (RL=17,YL=18,YH=22,RH=23) */
+   Limit limit4        { contextRange=3..3 , excursionCount=4 , redLow=20.4 , yellowLow=21.6 , yellowHigh=26.4 , redHigh=27.6 }  /* 24mA (RL=20.4,YL=21.6,YH=26.4,RH=27.6) */
+   Limit defaultLimit  {                   , excursionCount=4 , redLow=-20  , yellowLow=-19  , yellowHigh=1    , redHigh=2    }  /* 4 and above is OFF */
+ }
+LimitSet tsade_ana_TILT_LEDI_lim 
+{
+   contextMnemonic = tsade_pseudo_tilt_led_i_lvl
+   Limit limit1        { contextRange=0..0 , excursionCount=4 , redLow=10.2 , yellowLow=10.8 , yellowHigh=13.2 , redHigh=18.4 }  /* 12mA (RL=10.2,YL=10.8,YH=13.2,RH=18.8)*/
+   Limit limit2        { contextRange=1..1 , excursionCount=4 , redLow=13.6 , yellowLow=10.8 , yellowHigh=17.6 , redHigh=18.4 }  /* 16mA (RL=13.6,YL=14.4,YH=17.6,RH=18.4) */
+   Limit limit3        { contextRange=2..2 , excursionCount=4 , redLow=17   , yellowLow=18   , yellowHigh=22   , redHigh=23   }  /* 20mA (RL=17,YL=18,YH=22,RH=23) */
+   Limit limit4        { contextRange=3..3 , excursionCount=4 , redLow=20.4 , yellowLow=21.6 , yellowHigh=26.4 , redHigh=27.6 }  /* 24mA (RL=20.4,YL=21.6,YH=26.4,RH=27.6) */
+   Limit defaultLimit  {                     excursionCount=4 , redLow=-20  , yellowLow=-19  , yellowHigh=1    , redHigh=2    }  /* 4 and above is OFF */
+}

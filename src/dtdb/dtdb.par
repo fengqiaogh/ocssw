@@ -1,0 +1,86 @@
+
+    lut_gascorr = /accounts/ssander2/test/deepblue/modis/luts/collection6/MODIS_GAS_COEFS_LBL_v1.csv
+    lut_ocean_big1 = /accounts/ssander2/test/deepblue/modis/luts/collection6/big_v1c1.dat.v8
+    lut_ocean_big2 = /accounts/ssander2/test/deepblue/modis/luts/collection6/big_v2c1.dat.v8
+    lut_ocean_big3 = /accounts/ssander2/test/deepblue/modis/luts/collection6/big_v3c1.dat.v8
+    lut_ocean_big4 = /accounts/ssander2/test/deepblue/modis/luts/collection6/big_v4c1.dat.v8
+    lut_ocean_small1 = /accounts/ssander2/test/deepblue/modis/luts/collection6/small_v1c1.dat.v6
+    lut_ocean_small2 = /accounts/ssander2/test/deepblue/modis/luts/collection6/small_v1c1.dat.v6
+    lut_ocean_small3 = /accounts/ssander2/test/deepblue/modis/luts/collection6/small_v1c1.dat.v6
+    lut_ocean_small4 = /accounts/ssander2/test/deepblue/modis/luts/collection6/small_v1c1.dat.v6
+    lut_land_w0466 = /accounts/ssander2/test/deepblue/modis/luts/collection6/lookup_land_w0466.v4
+    lut_land_w0554 = /accounts/ssander2/test/deepblue/modis/luts/collection6/lookup_land_w0554.v4
+    lut_land_w0645 = /accounts/ssander2/test/deepblue/modis/luts/collection6/lookup_land_w0645.v4
+    lut_land_w2113 = /accounts/ssander2/test/deepblue/modis/luts/collection6/lookup_land_w2113.v4
+    lut_land_aerosol_map = /accounts/ssander2/test/deepblue/modis/luts/aerosol_land_map.v2
+
+    lut_transm_h2o_1 = /accounts/ssander2/test/deepblue/modis/luts/TRANSM_H2O.MDL_1_H2k.v1
+    lut_transm_h2o_2 = /accounts/ssander2/test/deepblue/modis/luts/TRANSM_H2O.MDL_2_H2k.v1
+    lut_transm_h2o_3 = /accounts/ssander2/test/deepblue/modis/luts/TRANSM_H2O.MDL_3_H2k.v1
+    lut_transm_h2o_4 = /accounts/ssander2/test/deepblue/modis/luts/TRANSM_H2O.MDL_4_H2k.v1
+    lut_transm_h2o_5 = /accounts/ssander2/test/deepblue/modis/luts/TRANSM_H2O.MDL_5_H2k.v1
+    lut_transm_h2o_6 = /accounts/ssander2/test/deepblue/modis/luts/TRANSM_H2O.MDL_6_H2k.v1
+#    lut_transm_h2o = /accounts/ssander2/test/deepblue/modis/luts/TRANSM_H2O_1P38_MICRON.v1
+
+    lut_surface_pressure = /accounts/ssander2/test/deepblue/modis/luts/MOD_PR04DB2/collection6/surface_pressure_20110406.hdf
+    lut_nvalx_412 = /accounts/ssander2/test/deepblue/viirs/tbls/nvalx_412table.bin
+    lut_nvalx_470 = /accounts/ssander2/test/deepblue/viirs/tbls/nvalx_470table.bin
+    lut_nvalx_650 = /accounts/ssander2/test/deepblue/viirs/tbls/nvalx_650table.bin
+    lut_global_igbp = /accounts/ssander2/test/deepblue/modis/luts/MOD_PR04DB2/collection6/MCD12C1.A2004001.005.Global_IGBP_Land_Cover_0.10deg_20121129.hdf
+    lut_nvalx21 = /accounts/ssander2/test/deepblue/modis/luts/MOD_PR04DB2/collection6/nvalx21um4sfc.hdf
+
+    lut_aero_land_fine = /accounts/ssander2/test/deepblue/viirs/tbls/land_aerosol_luts_20151105.hdf
+    lut_aero_land_dust = /accounts/ssander2/test/deepblue/viirs/tbls/land_aerosol_luts_dust_20170628.hdf
+    lut_aero_ocean_dust = /accounts/ssander2/test/deepblue/viirs/tbls/viirs_ocean_capo_verde_20170926_bandsplit.hdf
+    lut_aero_ocean_fine = /accounts/ssander2/test/deepblue/viirs/tbls/viirs_ocean_fine_dominated_20170926_bandsplit.hdf
+    lut_aero_ocean_mari = /accounts/ssander2/test/deepblue/viirs/tbls/viirs_ocean_marine_20170926_bandsplit.hdf
+    lut_aero_ocean_mix  = /accounts/ssander2/test/deepblue/viirs/tbls/viirs_ocean_mixed_20170926_bandsplit.hdf
+    lut_bathymetry  = /accounts/ssander2/test/deepblue/viirs/tbls/ETOPO1_Ice_g_gmt4.grd
+    lut_chl  = /accounts/ssander2/test/deepblue/viirs/tbls/seawifs_chl_clim_table_20170921.nc
+    lut_ler_table = /accounts/ssander2/test/deepblue/viirs/tbls/TABLE.SEAWIFS
+    lut_landcover = /accounts/ssander2/test/deepblue/viirs/tbls/landcover_20180205.hdf
+    lut_geozone = /accounts/ssander2/test/deepblue/viirs/tbls/viirs_geozone_table_20180406.hdf
+    lut_seasonal_deserts = /accounts/ssander2/test/deepblue/viirs/tbls/seasonal_deserts_table_20110901.hdf
+    lut_brdf = /accounts/ssander2/test/deepblue/viirs/tbls/npp_viiirs_brdfbase_20150207.hdf
+    lut_modis_surfdb = /accounts/ssander2/test/deepblue/modis/luts/MOD_PR04DB2/collection61/aqua_modis_surfdb_summer_20110913.hdf
+    lut_viirs_surfdb = /accounts/ssander2/test/deepblue/viirs/tbls/viirs_surfdb_summer_20170327.hdf
+    lut_surfcoeff = /accounts/ssander2/test/deepblue/viirs/tbls/viirs_surfcoeffs_2ndpfit_summer_20170809.hdf
+    lut_swir = /accounts/ssander2/test/deepblue/viirs/tbls/viirs_snpp_swir_vs_vis_surf_coeffs_summer_all_2nd_minimum_20170809.hdf
+    lut_veg_landcover = /accounts/ssander2/test/deepblue/viirs/tbls/igbp_landcover_20180426.hdf
+    lut_veg_21sfc = /accounts/ssander2/test/deepblue/viirs/tbls/nvalx21um4sfc.hdf
+
+    lut_viirs_xcal_412 = /accounts/ssander2/test/deepblue/viirs/tbls/xcal_viirsn_v3_410.hdf
+    lut_viirs_xcal_488 = /accounts/ssander2/test/deepblue/viirs/tbls/xcal_viirsn_v3_486.hdf
+
+    lut_nc4_dt = /accounts/ssander2/test/darktarget/LUTs/NETCDF/VIIRS_DARKTARGET_LUT_version_source.nc 
+    lut_nc4_db = /accounts/ssander2/test/deepblue/netcdf/VIIRS_DEEPBLUE_LUT_version_source.nc
+    lut_nc4_path = /accounts/ssander2/test/deepblue/netcdf
+
+    prod_xml = /accounts/ssander2/ocssw/src/dtdb/dtdb_product.xml
+    ifile = /accounts/ssander2/test/deepblue/input/VL1BM_snpp_d20150818_t173000_c20160312121643.nc
+    geofile = /accounts/ssander2/test/deepblue/input/VGEOM_snpp_d20150818_t173000_c20160803171143.nc
+#    atmosphere = /accounts/ssander2/test/deepblue/modis/input/test1/MOD07_L2.A2006063.0555.006.2014352115301.hdf
+#    cloudmask = /accounts/ssander2/test/deepblue/modis/input/test1/MOD35_L2.A2006063.0555.006.2014352115156.hdf
+    landmask = /accounts/ssander2/ocssw/share/common/landmask_GMT15ARC.nc
+    met = /accounts/ssander2/test/darktarget/luts/N201523006_MET_NCEP_6h.hdf 
+    ozone = /accounts/ssander2/test/darktarget/luts/N201523000_O3_AURAOMI_24h.hdf 
+
+    ofile = /accounts/ssander2/test/deepblue/output/DB.20150818.173000.nc
+
+# specify products to be reported 
+
+quality=on
+aerosol_type=on
+scattang=on
+fmf_550=on
+angstrom=on
+aot_380=on
+aot_410=on
+aot_490=on
+aot_550=on
+aot_670=on
+aot_865=on
+aot_1240=on
+aot_1610=on
+aot_2250=on
+

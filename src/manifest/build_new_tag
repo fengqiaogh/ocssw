@@ -1,0 +1,171 @@
+#! /usr/bin/bash
+
+# T=test, V=operational
+export tag_type=T
+
+export THETAG="T2022.34"
+export THEMESSAGE="
+- changed some of the command line options for l1cgen
+- made a script to build and push a new manifest tag
+- Add data corruption checks to l0info_pace
+- updated share/oci/OCI_GEO_Level-1B_Data_Structure.cdl
+- new l1agen_spex that takes a yaml file as input
+"
+
+
+
+
+#-----------------------------------------------------------
+# nothing to edit below here
+#
+export TAGDIR=~/tagdir
+export OCSSWROOT=$TAGDIR/ocssw
+source $OCSSWROOT/OCSSW_bash.env
+
+if [[ $tag_type = "V" ]]
+then
+    export BRANCH_OCSSW=R2020
+    export BRANCH_OEL_UTIL=R2020
+    export BRANCH_OEL_HDF4=R2020
+    export BRANCH_VIIRS_L1=R2020
+    export BRANCH_FOCS=R2020
+else
+    export BRANCH_OCSSW=develop
+    export BRANCH_OEL_UTIL=develop
+    export BRANCH_OEL_HDF4=develop
+    export BRANCH_VIIRS_L1=master
+    export BRANCH_FOCS=develop
+fi
+
+#
+# nice function to check the return value
+#
+check_return () {
+    if [[ $? -ne 0 ]]
+    then
+        echo "-E- $1"
+        exit 1
+    fi
+}
+
+#
+# Checkout the correct branches for repos and submodules
+#
+cd $TAGDIR/ocssw
+check_return "ocssw dir does not exist"
+git checkout $BRANCH_OCSSW
+check_return "ocssw checkout is bad"
+git pull
+cd oel_util && git checkout $BRANCH_OEL_UTIL && git pull && cd ..
+check_return "oel_util checkout is bad"
+cd oel_hdf4 && git checkout $BRANCH_OEL_HDF4 && git pull && cd ..
+check_return "oel_hdf4 checkout is bad"
+
+cd $TAGDIR/viirs_l1
+check_return "viirs_l1 dir does not exist"
+git checkout $BRANCH_VIIRS_L1
+check_return "viirs_l1 checkout is bad"
+git pull
+cd oel_util; git checkout $BRANCH_OEL_UTIL; git pull; cd ..
+
+cd $TAGDIR/focs
+check_return "focs dir does not exist"
+git checkout $BRANCH_FOCS
+check_return "focs checkout is bad"
+git pull
+cd oel_util; git checkout $BRANCH_OEL_UTIL; git pull; cd ..
+cd oel_hdf4; git checkout $BRANCH_OEL_HDF4; git pull; cd ..
+
+#
+# make sure all root repos are checked in and clean
+#
+cd $TAGDIR/ocssw
+git status | grep "nothing to commit, working tree clean"
+check_return "ocssw is not clean"
+
+cd $TAGDIR/viirs_l1
+git status | grep "nothing to commit, working tree clean"
+check_return "viirs_l1 is not clean"
+
+cd $TAGDIR/focs
+git status | grep "nothing to commit, working tree clean"
+check_return "focs is not clean"
+
+#
+# build viirs_l1
+#
+cd $TAGDIR/viirs_l1
+rm -rf build
+mkdir build
+cd build
+cmake ..
+check_return "viirs_l1 cmake failed"
+make -j 20 install
+check_return "viirs_l1 make install failed"
+
+#
+# build focs
+#
+cd $TAGDIR/focs
+rm -rf build
+mkdir build
+cd build
+cmake ..
+check_return "focs cmake failed"
+make -j 20 install
+check_return "focs make install failed"
+
+#
+# build ocssw
+#
+cd $TAGDIR/ocssw
+rm -rf build
+mkdir build
+cd build
+cmake .. -DBUILD_ALL=1
+check_return "ocsssw cmake failed"
+make -j 20 install
+check_return "ocssw make install failed"
+
+#
+# make the tag in git
+#
+cd $TAGDIR/ocssw &&           git tag $THETAG -a -m "$THEMESSAGE" && git push --tags
+check_return "ocssw tag failed"
+cd $TAGDIR/ocssw/oel_util &&  git tag $THETAG -a -m "$THEMESSAGE" && git push --tags
+check_return "oel_util tag failed"
+cd $TAGDIR/ocssw/oel_hdf4 &&  git tag $THETAG -a -m "$THEMESSAGE" && git push --tags
+check_return "oel_hdf4 tag failed"
+cd $TAGDIR/viirs_l1 &&        git tag $THETAG -a -m "$THEMESSAGE" && git push --tags
+check_return "viirs_l1 tag failed"
+cd $TAGDIR/focs &&            git tag $THETAG -a -m "$THEMESSAGE" && git push --tags
+check_return "focs tag failed"
+
+# build the tag for all archetecures
+# make sure build is clean
+cd
+build_manifest_ocssw -t $THETAG
+check_return "build_manifest_ocssw failed"
+
+#
+# transfer the new code to the manifest directory
+# check what files are actually copied
+#
+cd ~/ocssw-manifest
+update_manifest_dirs --live
+manifest_ocssw status
+
+echo
+read -p "Do you want to continue (y/n) " answer
+if [[ $answer != "y" ]]
+then
+    echo "Exiting..."
+    exit 1
+fi
+
+#
+# create the tag
+#
+cd ~/ocssw-manifest
+manifest_ocssw push $THETAG
+
